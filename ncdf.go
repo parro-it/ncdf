@@ -4,12 +4,14 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	"unsafe"
 )
 
-type Version []byte
+type Version [4]byte
 
 type File struct {
 	fd         *os.File
+	count      uint64
 	Version    Version
 	NumRecs    int32
 	Dimensions []Dimension
@@ -68,165 +70,78 @@ func (t Type) String() string {
 	return "[UNKNOWN]"
 }
 
-func Open(file string) (*File, error) {
+func (f *File) readHeader() error {
+	var err error
 
-	fd, err := os.Open(file)
-	if err != nil {
-		return nil, err
+	if f.Version, err = readVal[[4]byte](f); err != nil {
+		return err
 	}
-	f := &File{
-		fd:      fd,
-		Version: make([]byte, 4),
-	}
-	count := 0
-
-	_, err = fd.Read(f.Version)
-	if err != nil {
-		fd.Close()
-		return nil, err
-	}
-	count += len((f.Version))
 
 	if err = f.Version.Check(); err != nil {
-		fd.Close()
-		return nil, err
+		return err
 	}
 
-	if binary.Read(fd, binary.BigEndian, &f.NumRecs) != nil {
-		fd.Close()
-		return nil, err
+	if f.NumRecs, err = readVal[int32](f); err != nil {
+		return err
 	}
-	count += 4
 
-	buf, err := readTag(fd, &count)
+	_, err = readTag(f.fd, &f.count)
 	if err != nil {
-		fd.Close()
-		return nil, err
+		return err
 	}
 
 	//NC_DIMENSION = \x00 \x00 \x00 \x0A
 
-	var numdims int32
-	if binary.Read(fd, binary.BigEndian, &numdims) != nil {
-		fd.Close()
-		return nil, err
+	numdims, err := readVal[int32](f)
+	if err != nil {
+		return err
 	}
-	count += 4
 	//fmt.Println(numrecs, " dimensions")
 	f.Dimensions = make([]Dimension, numdims)
 
 	for i := 0; i < int(numdims); i++ {
-		var nameLen int32
-		if binary.Read(fd, binary.BigEndian, &nameLen) != nil {
-			fd.Close()
-			return nil, err
-		}
-		count += 4 + int(nameLen)
 
-		buf = make([]byte, nameLen)
-		_, err = fd.Read(buf)
+		dimName, err := readString(f)
 		if err != nil {
-			fd.Close()
-			return nil, err
+			return err
 		}
 
-		dimName := string(buf)
-		//fmt.Println(dimName)
-		restCount := 4 - (count % 4)
-		if restCount < 4 {
-			rest := make([]byte, restCount)
-			_, err = fd.Read(rest)
-			if err != nil {
-				fd.Close()
-				return nil, err
-			}
-			count += restCount
+		dimLen, err := readVal[int32](f)
+		if err != nil {
+			return err
 		}
-
-		var dimLen int32
-		if binary.Read(fd, binary.BigEndian, &dimLen) != nil {
-			fd.Close()
-			return nil, err
-		}
-		count += 4
 		f.Dimensions[i] = Dimension{dimName, dimLen}
 		//fmt.Printf("%s: %d\n", dimName, dimLen)
 	}
 
-	buf, err = readTag(fd, &count)
+	_, err = readTag(f.fd, &f.count)
 	if err != nil {
-		fd.Close()
-		return nil, err
+		return err
 	}
 	// NC_ATTRIBUTE = \x00 \x00 \x00 \x0C
 
-	var numgattrs int32
-	if binary.Read(fd, binary.BigEndian, &numgattrs) != nil {
-		fd.Close()
-		return nil, err
+	numgattrs, err := readVal[int32](f)
+	if err != nil {
+		return err
 	}
-	count += 4
 
 	f.Attrs = make([]Attr, numgattrs)
 
 	for i := 0; i < int(numgattrs); i++ {
-		var nameLen int32
-		if binary.Read(fd, binary.BigEndian, &nameLen) != nil {
-			fd.Close()
-			return nil, err
-		}
-		count += 4 + int(nameLen)
+		var attrName string
 
-		buf = make([]byte, nameLen)
-		_, err = fd.Read(buf)
-		if err != nil {
-			fd.Close()
-			return nil, err
+		if attrName, err = readString(f); err != nil {
+			return err
 		}
 
-		attrName := string(buf)
-		restCount := 4 - (count % 4)
-		if restCount < 4 {
-			rest := make([]byte, restCount)
-			_, err = fd.Read(rest)
-			if err != nil {
-				fd.Close()
-				return nil, err
-			}
-			count += restCount
+		if _, err := readVal[Type](f); err != nil {
+			return err
 		}
 
-		var t Type
-		if binary.Read(fd, binary.BigEndian, &t) != nil {
-			fd.Close()
-			return nil, err
-		}
-		count += 4
+		var valStr string
 
-		var valLen int32
-		if binary.Read(fd, binary.BigEndian, &valLen) != nil {
-			fd.Close()
-			return nil, err
-		}
-		count += 4 + int(valLen)
-
-		buf = make([]byte, valLen)
-		_, err = fd.Read(buf)
-		if err != nil {
-			fd.Close()
-			return nil, err
-		}
-
-		valStr := string(buf)
-		restCount = 4 - (count % 4)
-		if restCount < 4 {
-			rest := make([]byte, restCount)
-			_, err = fd.Read(rest)
-			if err != nil {
-				fd.Close()
-				return nil, err
-			}
-			count += restCount
+		if valStr, err = readString(f); err != nil {
+			return err
 		}
 
 		f.Attrs[i] = Attr{
@@ -235,10 +150,64 @@ func Open(file string) (*File, error) {
 		}
 
 	}
+	return nil
+}
+
+func readString(f *File) (string, error) {
+	nameLen, err := readVal[int32](f)
+	if err != nil {
+		return "", err
+	}
+
+	buf := make([]byte, nameLen)
+	_, err = f.fd.Read(buf)
+	if err != nil {
+		return "", err
+	}
+	f.count += uint64(nameLen)
+
+	restCount := 4 - (f.count % 4)
+	if restCount == 4 {
+		return string(buf), nil
+	}
+
+	rest := make([]byte, restCount)
+	_, err = f.fd.Read(rest)
+	if err != nil {
+		return "", err
+	}
+	f.count += restCount
+
+	return string(buf), nil
+}
+
+func readVal[T any](f *File) (T, error) {
+	var val T
+	if err := binary.Read(f.fd, binary.BigEndian, &val); err != nil {
+		var empty T
+		return empty, err
+	}
+	f.count += uint64(unsafe.Sizeof(val))
+	return val, nil
+}
+
+func Open(file string) (*File, error) {
+
+	fd, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	f := &File{
+		fd: fd,
+	}
+	if err := f.readHeader(); err != nil {
+		return nil, err
+	}
+
 	return f, nil
 }
 
-func readTag(fd *os.File, count *int) ([]byte, error) {
+func readTag(fd *os.File, count *uint64) ([]byte, error) {
 	buf := make([]byte, 4)
 	_, err := fd.Read(buf)
 	if err != nil {

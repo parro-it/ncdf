@@ -17,21 +17,21 @@ func TestOpen(t *testing.T) {
 func TestCheck(t *testing.T) {
 	t.Run("bad magic string", func(t *testing.T) {
 		f := &File{
-			Version: []byte{1, 2, 3, 4},
+			Version: [4]byte{1, 2, 3, 4},
 		}
 		assert.EqualError(t, f.Version.Check(), "Invalid magic string [1 2 3]")
 	})
 
 	t.Run("bad version", func(t *testing.T) {
 		f := &File{
-			Version: []byte{'C', 'D', 'F', 4},
+			Version: [4]byte{'C', 'D', 'F', 4},
 		}
 		assert.EqualError(t, f.Version.Check(), "Invalid version 4")
 	})
 
 	t.Run("Correct", func(t *testing.T) {
 		f := &File{
-			Version: []byte{'C', 'D', 'F', 1},
+			Version: [4]byte{'C', 'D', 'F', 1},
 		}
 		assert.NoError(t, f.Version.Check())
 	})
