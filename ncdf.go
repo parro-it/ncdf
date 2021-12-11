@@ -85,33 +85,16 @@ func (f *File) readHeader() error {
 		return err
 	}
 
-	_, err = readTag(f.fd, &f.count)
-	if err != nil {
+	if _, err = readTag(f.fd, &f.count); err != nil {
 		return err
 	}
 
 	//NC_DIMENSION = \x00 \x00 \x00 \x0A
 
-	numdims, err := readVal[int32](f)
+	//fmt.Printf("%s: %d\n", dimName, dimLen)
+	f.Dimensions, err = f.readDimensions()
 	if err != nil {
 		return err
-	}
-	//fmt.Println(numrecs, " dimensions")
-	f.Dimensions = make([]Dimension, numdims)
-
-	for i := 0; i < int(numdims); i++ {
-
-		dimName, err := readString(f)
-		if err != nil {
-			return err
-		}
-
-		dimLen, err := readVal[int32](f)
-		if err != nil {
-			return err
-		}
-		f.Dimensions[i] = Dimension{dimName, dimLen}
-		//fmt.Printf("%s: %d\n", dimName, dimLen)
 	}
 
 	_, err = readTag(f.fd, &f.count)
@@ -151,6 +134,46 @@ func (f *File) readHeader() error {
 
 	}
 	return nil
+}
+
+func readListOf[T any](f *File, fn func(f *File) T) ([]T, error) {
+	len, err := readVal[int32](f)
+	if err != nil {
+		return nil, err
+	}
+
+	list := make([]T, len)
+
+	for i := int32(0); i < len; i++ {
+		list[i] = fn(f)
+	}
+
+	return list, nil
+}
+
+func (f *File) readDimensions() ([]Dimension, error) {
+	numdims, err := readVal[int32](f)
+	if err != nil {
+		return nil, err
+	}
+
+	list := make([]Dimension, numdims)
+
+	for i := 0; i < int(numdims); i++ {
+
+		dimName, err := readString(f)
+		if err != nil {
+			return nil, err
+		}
+
+		dimLen, err := readVal[int32](f)
+		if err != nil {
+			return nil, err
+		}
+		list[i] = Dimension{dimName, dimLen}
+
+	}
+	return list, nil
 }
 
 func readString(f *File) (string, error) {
