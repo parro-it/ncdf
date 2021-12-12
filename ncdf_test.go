@@ -9,7 +9,7 @@ import (
 
 func TestOpen(t *testing.T) {
 	f, err := Open("fixtures/example.nc")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, f)
 	f.Close()
 }
@@ -39,7 +39,7 @@ func TestCheck(t *testing.T) {
 	t.Run("NumRecs", func(t *testing.T) {
 		f, err := Open("fixtures/example.nc")
 		assert.NoError(t, err)
-		assert.NotNil(t, f)
+		require.NotNil(t, f)
 		assert.Equal(t, int32(0), f.NumRecs)
 		f.Close()
 
@@ -64,8 +64,8 @@ func TestCheck(t *testing.T) {
 		defer f.Close()
 		assert.NoError(t, err)
 		assert.Equal(t, []Attr{
-			{"Conventions", "CF-1.6"},
-			{"history", "2020-03-20 11:41:00 GMT by grib_to_netcdf-2.16.0: /opt/ecmwf/eccodes/bin/grib_to_netcdf -S param -o /cache/data4/adaptor.mars.internal-1584704431.3029954-14866-24-a3017812-b06b-4c9d-aee6-e5a74bbbfbc9.nc /cache/tmp/a3017812-b06b-4c9d-aee6-e5a74bbbfbc9-adaptor.mars.internal-1584704431.3035216-14866-8-tmp.grib"},
+			{"Conventions", "CF-1.6", Char},
+			{"history", "2020-03-20 11:41:00 GMT by grib_to_netcdf-2.16.0: /opt/ecmwf/eccodes/bin/grib_to_netcdf -S param -o /cache/data4/adaptor.mars.internal-1584704431.3029954-14866-24-a3017812-b06b-4c9d-aee6-e5a74bbbfbc9.nc /cache/tmp/a3017812-b06b-4c9d-aee6-e5a74bbbfbc9-adaptor.mars.internal-1584704431.3035216-14866-8-tmp.grib", Char},
 		}, f.Attrs)
 
 	})

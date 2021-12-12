@@ -3,6 +3,7 @@ package ncdf
 import (
 	"encoding/binary"
 	"fmt"
+	"log"
 	"os"
 	"unsafe"
 )
@@ -16,12 +17,24 @@ type File struct {
 	NumRecs    int32
 	Dimensions []Dimension
 	Attrs      []Attr
+	Vars       []Var
+}
+
+type Var struct {
+	Dimensions []*Dimension
+	Attrs      []Attr
+	Name       string
+	Type       Type
+	Size       int32
+	Offset     uint64
 }
 
 type Attr struct {
 	Name string
 	Val  string
+	Type Type
 }
+
 type Dimension struct {
 	Name string
 	Len  int32
@@ -46,11 +59,13 @@ func (f *File) Close() error {
 type Type int32
 
 const (
-	Byte  Type = 1 // NC_BYTE = \x00 \x00 \x00 \x01 // 8-bit signed integers
-	Char  Type = 2 // NC_CHAR = \x00 \x00 \x00 \x02 // text characters
-	Short Type = 3 // NC_SHORT = \x00 \x00 \x00 \x03 // 16-bit signed integers
-	Int   Type = 4 // NC_INT = \x00 \x00 \x00 \x04 // 32-bit signed integers
-	Float Type = 5 // NC_FLOAT = \x00 \x00 \x00 \x05 // IEEE single precision floats
+	Byte   Type = 1 // NC_BYTE = \x00 \x00 \x00 \x01 // 8-bit signed integers
+	Char   Type = 2 // NC_CHAR = \x00 \x00 \x00 \x02 // text characters
+	Short  Type = 3 // NC_SHORT = \x00 \x00 \x00 \x03 // 16-bit signed integers
+	Int    Type = 4 // NC_INT = \x00 \x00 \x00 \x04 // 32-bit signed integers
+	Float  Type = 5 // NC_FLOAT = \x00 \x00 \x00 \x05 // IEEE single precision floats
+	Double Type = 6 // NC_DOUBLE = \x00 \x00 \x00 \x06 // IEEE double precision floats
+
 )
 
 func (t Type) String() string {
@@ -65,6 +80,32 @@ func (t Type) String() string {
 		return "NC_INT"
 	case Float:
 		return "NC_FLOAT"
+	case Double:
+		return "NC_DOUBLE"
+	}
+
+	return fmt.Sprintf("[UNKNOWN:%d]", t)
+}
+
+type Tag int32
+
+const (
+	ZeroTag      Tag = 0x00 // ZERO = \x00 \x00 \x00 \x00 // 32-bit zero
+	DimensionTag Tag = 0x0A // NC_DIMENSION = \x00 \x00 \x00 \x0A // tag for list of dimensions
+	VariableTag  Tag = 0x0B // NC_VARIABLE = \x00 \x00 \x00 \x0B // tag for list of variables
+	AttributeTag Tag = 0x0C // NC_ATTRIBUTE = \x00 \x00 \x00 \x0C // tag for list of attributes
+)
+
+func (t Tag) String() string {
+	switch t {
+	case ZeroTag:
+		return "ZERO"
+	case DimensionTag:
+		return "NC_DIMENSION"
+	case VariableTag:
+		return "NC_VARIABLE"
+	case AttributeTag:
+		return "NC_ATTRIBUTE"
 	}
 
 	return "[UNKNOWN]"
@@ -85,95 +126,180 @@ func (f *File) readHeader() error {
 		return err
 	}
 
-	if _, err = readTag(f.fd, &f.count); err != nil {
+	if f.Dimensions, err = f.readDimensions(); err != nil {
 		return err
 	}
 
-	//NC_DIMENSION = \x00 \x00 \x00 \x0A
-
-	//fmt.Printf("%s: %d\n", dimName, dimLen)
-	f.Dimensions, err = f.readDimensions()
-	if err != nil {
+	if f.Attrs, err = f.readAttributes(); err != nil {
 		return err
 	}
 
-	_, err = readTag(f.fd, &f.count)
-	if err != nil {
-		return err
-	}
-	// NC_ATTRIBUTE = \x00 \x00 \x00 \x0C
-
-	numgattrs, err := readVal[int32](f)
-	if err != nil {
+	if f.Vars, err = f.readVars(); err != nil {
 		return err
 	}
 
-	f.Attrs = make([]Attr, numgattrs)
-
-	for i := 0; i < int(numgattrs); i++ {
-		var attrName string
-
-		if attrName, err = readString(f); err != nil {
-			return err
-		}
-
-		if _, err := readVal[Type](f); err != nil {
-			return err
-		}
-
-		var valStr string
-
-		if valStr, err = readString(f); err != nil {
-			return err
-		}
-
-		f.Attrs[i] = Attr{
-			Name: attrName,
-			Val:  valStr,
-		}
-
-	}
 	return nil
 }
 
-func readListOf[T any](f *File, fn func(f *File) T) ([]T, error) {
+func (f *File) readAttributes() ([]Attr, error) {
+	t, err := readTag(f)
+	if err != nil {
+		return nil, err
+	}
+	if t != AttributeTag {
+		return nil, fmt.Errorf("Expected AttributeTag, got %s", t.String())
+	}
+
+	return readListOf(f, func(f *File) (a Attr, err error) {
+		if a.Name, err = readString(f); err != nil {
+			return a, err
+		}
+
+		if a.Type, err = readVal[Type](f); err != nil {
+			return a, err
+		}
+
+		if a.Type == Double {
+			var nelems int32
+			nelems, err = readVal[int32](f)
+			if err != nil {
+				return a, err
+			}
+			for i := int32(0); i < nelems; i++ {
+				if v, err := readVal[float64](f); err != nil {
+
+					return a, err
+				} else {
+					fmt.Println(a.Name, a.Type, v)
+				}
+			}
+			return
+		}
+
+		if a.Type == Short {
+			var nelems int32
+			nelems, err = readVal[int32](f)
+			if err != nil {
+				return a, err
+			}
+			for i := int32(0); i < nelems; i++ {
+				if v, err := readVal[int16](f); err != nil {
+					fmt.Println(v)
+					return a, err
+				}
+
+			}
+			fmt.Println(a.Name, a.Type)
+
+			restCount := 4 - (f.count % 4)
+			if restCount == 4 {
+				return
+			}
+
+			rest := make([]byte, restCount)
+			_, err = f.fd.Read(rest)
+			if err != nil {
+				return a, err
+			}
+			f.count += restCount
+			return
+		}
+
+		if a.Type == Char {
+			if a.Val, err = readString(f); err != nil {
+				return a, err
+			}
+			fmt.Println(a.Name, a.Type)
+			return
+		}
+		log.Panicf("unsupported type %s", a.Type.String())
+
+		return
+	})
+}
+
+func (f *File) readVars() ([]Var, error) {
+	t, err := readTag(f)
+	if err != nil {
+		return nil, err
+	}
+	if t != VariableTag {
+		return nil, fmt.Errorf("Expected VariableTag, got %s", t.String())
+	}
+
+	return readListOf(f, func(f *File) (v Var, err error) {
+		if v.Name, err = readString(f); err != nil {
+			return v, err
+		}
+
+		v.Dimensions, err = readListOf(f, func(f *File) (*Dimension, error) {
+			id, err := readVal[int32](f)
+			if err != nil {
+				return nil, err
+			}
+			return &f.Dimensions[id], nil
+		})
+
+		if err != nil {
+			return v, err
+		}
+
+		if v.Attrs, err = f.readAttributes(); err != nil {
+			return v, err
+		}
+		if v.Type, err = readVal[Type](f); err != nil {
+			return v, err
+		}
+
+		if v.Size, err = readVal[int32](f); err != nil {
+			return v, err
+		}
+
+		if v.Offset, err = readVal[uint64](f); err != nil {
+			return v, err
+		}
+		fmt.Println(v.Name, v.Type)
+		return
+	})
+}
+
+func readListOf[T any](f *File, fn func(f *File) (T, error)) (list []T, err error) {
 	len, err := readVal[int32](f)
 	if err != nil {
 		return nil, err
 	}
 
-	list := make([]T, len)
+	list = make([]T, len)
 
 	for i := int32(0); i < len; i++ {
-		list[i] = fn(f)
+		list[i], err = fn(f)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return list, nil
 }
 
 func (f *File) readDimensions() ([]Dimension, error) {
-	numdims, err := readVal[int32](f)
+	t, err := readTag(f)
 	if err != nil {
 		return nil, err
 	}
-
-	list := make([]Dimension, numdims)
-
-	for i := 0; i < int(numdims); i++ {
-
-		dimName, err := readString(f)
-		if err != nil {
-			return nil, err
-		}
-
-		dimLen, err := readVal[int32](f)
-		if err != nil {
-			return nil, err
-		}
-		list[i] = Dimension{dimName, dimLen}
-
+	if t != DimensionTag {
+		return nil, fmt.Errorf("Expected DimensionTag, got %s", t.String())
 	}
-	return list, nil
+	return readListOf(f, func(f *File) (d Dimension, err error) {
+		if d.Name, err = readString(f); err != nil {
+			return d, err
+		}
+
+		if d.Len, err = readVal[int32](f); err != nil {
+			return d, err
+		}
+
+		return
+	})
 }
 
 func readString(f *File) (string, error) {
@@ -230,12 +356,12 @@ func Open(file string) (*File, error) {
 	return f, nil
 }
 
-func readTag(fd *os.File, count *uint64) ([]byte, error) {
+func readTag(f *File) (Tag, error) {
 	buf := make([]byte, 4)
-	_, err := fd.Read(buf)
+	_, err := f.fd.Read(buf)
 	if err != nil {
-		return nil, err
+		return ZeroTag, err
 	}
-	*count += 4
-	return buf, err
+	f.count += 4
+	return Tag(buf[3]), err
 }
