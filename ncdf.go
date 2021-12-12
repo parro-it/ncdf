@@ -68,6 +68,14 @@ const (
 
 )
 
+func (t Type) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"%s"`, t.String())), nil
+}
+
+func (t Version) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`%d`, t[3])), nil
+}
+
 func (t Type) String() string {
 	switch t {
 	case Byte:
