@@ -58,6 +58,27 @@ func TestCheck(t *testing.T) {
 
 	})
 
+	t.Run("Variables", func(t *testing.T) {
+		f, err := Open("fixtures/example.nc")
+		require.NotNil(t, f)
+		defer f.Close()
+		assert.NoError(t, err)
+		assert.Equal(t, "longitude", f.Vars[0].Dimensions[0].Name)
+		f.Vars[0].Dimensions = make([]*Dimension, 0)
+		assert.Equal(t, Var{
+			Dimensions: []*Dimension{},
+			Attrs: []Attr{
+				{Name: "units", Val: "degrees_east", Type: 2},
+				{Name: "long_name", Val: "longitude", Type: 2},
+			},
+			Name:   "longitude",
+			Type:   5,
+			Size:   14400,
+			Offset: 0x718,
+		}, f.Vars[0])
+
+	})
+
 	t.Run("Global attributes", func(t *testing.T) {
 		f, err := Open("fixtures/example.nc")
 		require.NotNil(t, f)
