@@ -31,7 +31,7 @@ type Var struct {
 
 type Attr struct {
 	Name string
-	Val  string
+	Val  interface{}
 	Type Type
 }
 
@@ -149,11 +149,63 @@ func (f *File) readHeader() error {
 	return nil
 }
 
+type BaseType interface {
+	byte | int16 | int32 | float32 | float64
+}
+
+func readAttrValue[T BaseType](f *File) ([]T, error) {
+	var val T
+	var res []T
+	nelems, err := readVal[int32](f)
+	if err != nil {
+		var empty []T
+		return empty, err
+	}
+
+	for i := int32(0); i < nelems; i++ {
+		val, err = readVal[T](f)
+		if err != nil {
+			var empty []T
+			return empty, err
+		}
+		res = append(res, val)
+	}
+
+	restCount := 4 - (f.count % 4)
+	if restCount == 4 {
+		return res, nil
+	}
+
+	rest := make([]byte, restCount)
+	_, err = f.fd.Read(rest)
+	if err != nil {
+		var empty []T
+		return empty, err
+	}
+	f.count += restCount
+
+	return res, nil
+}
+
 func (f *File) readAttributes() ([]Attr, error) {
 	t, err := readTag(f)
 	if err != nil {
 		return nil, err
 	}
+
+	if t == ZeroTag {
+		t2, err := readTag(f)
+		if err != nil {
+			return nil, err
+		}
+
+		if t2 != ZeroTag {
+			return nil, fmt.Errorf("Expected ZeroTag, got %s", t2.String())
+		}
+
+		return []Attr{}, nil
+	}
+
 	if t != AttributeTag {
 		return nil, fmt.Errorf("Expected AttributeTag, got %s", t.String())
 	}
@@ -168,48 +220,40 @@ func (f *File) readAttributes() ([]Attr, error) {
 		}
 
 		if a.Type == Double {
-			var nelems int32
-			nelems, err = readVal[int32](f)
-			if err != nil {
+			if a.Val, err = readAttrValue[float64](f); err != nil {
 				return a, err
 			}
-			for i := int32(0); i < nelems; i++ {
-				if v, err := readVal[float64](f); err != nil {
 
-					return a, err
-				} else {
-					fmt.Println(a.Name, a.Type, v)
-				}
-			}
 			return
 		}
 
 		if a.Type == Short {
-			var nelems int32
-			nelems, err = readVal[int32](f)
-			if err != nil {
+			if a.Val, err = readAttrValue[int16](f); err != nil {
 				return a, err
 			}
-			for i := int32(0); i < nelems; i++ {
-				if v, err := readVal[int16](f); err != nil {
-					fmt.Println(v)
-					return a, err
-				}
 
-			}
-			fmt.Println(a.Name, a.Type)
+			return
+		}
 
-			restCount := 4 - (f.count % 4)
-			if restCount == 4 {
-				return
-			}
-
-			rest := make([]byte, restCount)
-			_, err = f.fd.Read(rest)
-			if err != nil {
+		if a.Type == Int {
+			if a.Val, err = readAttrValue[int32](f); err != nil {
 				return a, err
 			}
-			f.count += restCount
+			return
+		}
+
+		if a.Type == Byte {
+			if a.Val, err = readAttrValue[byte](f); err != nil {
+				return a, err
+			}
+			return
+		}
+
+		if a.Type == Float {
+			if a.Val, err = readAttrValue[float32](f); err != nil {
+				return a, err
+			}
+
 			return
 		}
 
@@ -217,7 +261,6 @@ func (f *File) readAttributes() ([]Attr, error) {
 			if a.Val, err = readString(f); err != nil {
 				return a, err
 			}
-			fmt.Println(a.Name, a.Type)
 			return
 		}
 		log.Panicf("unsupported type %s", a.Type.String())

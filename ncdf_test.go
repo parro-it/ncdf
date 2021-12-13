@@ -1,6 +1,8 @@
 package ncdf
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,7 +10,10 @@ import (
 )
 
 func TestOpen(t *testing.T) {
-	f, err := Open("fixtures/example.nc")
+	i, err := os.Stat("fixtures/exampl2.nc")
+	require.NoError(t, err)
+	fmt.Println(i)
+	f, err := Open("fixtures/exampl2.nc")
 	require.NoError(t, err)
 	assert.NotNil(t, f)
 	f.Close()
@@ -37,57 +42,53 @@ func TestCheck(t *testing.T) {
 	})
 
 	t.Run("NumRecs", func(t *testing.T) {
-		f, err := Open("fixtures/example.nc")
+		f, err := Open("fixtures/exampl2.nc")
 		assert.NoError(t, err)
 		require.NotNil(t, f)
-		assert.Equal(t, int32(0), f.NumRecs)
+		assert.Equal(t, int32(1), f.NumRecs)
 		f.Close()
 
 	})
 
 	t.Run("Dimensions", func(t *testing.T) {
-		f, err := Open("fixtures/example.nc")
+		f, err := Open("fixtures/exampl2.nc")
 		require.NotNil(t, f)
 		defer f.Close()
 		assert.NoError(t, err)
 		assert.Equal(t, []Dimension{
-			{"longitude", 3600},
-			{"latitude", 1801},
-			{"time", 24},
+			{"Time", 0},
+			{"DateStrLen", 19},
+			{"west_east", 429},
+			{"south_north", 468},
+			{"num_press_levels_stag", 11},
 		}, f.Dimensions)
 
 	})
 
 	t.Run("Variables", func(t *testing.T) {
-		f, err := Open("fixtures/example.nc")
+		f, err := Open("fixtures/exampl2.nc")
 		require.NotNil(t, f)
 		defer f.Close()
 		assert.NoError(t, err)
-		assert.Equal(t, "longitude", f.Vars[0].Dimensions[0].Name)
+		assert.Equal(t, "Time", f.Vars[0].Dimensions[0].Name)
 		f.Vars[0].Dimensions = make([]*Dimension, 0)
 		assert.Equal(t, Var{
 			Dimensions: []*Dimension{},
-			Attrs: []Attr{
-				{Name: "units", Val: "degrees_east", Type: 2},
-				{Name: "long_name", Val: "longitude", Type: 2},
-			},
-			Name:   "longitude",
-			Type:   5,
-			Size:   14400,
-			Offset: 0x718,
+			Attrs:      []Attr{},
+			Name:       "Times",
+			Type:       2,
+			Size:       20,
+			Offset:     0x2f5c,
 		}, f.Vars[0])
 
 	})
 
 	t.Run("Global attributes", func(t *testing.T) {
-		f, err := Open("fixtures/example.nc")
+		f, err := Open("fixtures/exampl2.nc")
 		require.NotNil(t, f)
 		defer f.Close()
 		assert.NoError(t, err)
-		assert.Equal(t, []Attr{
-			{"Conventions", "CF-1.6", Char},
-			{"history", "2020-03-20 11:41:00 GMT by grib_to_netcdf-2.16.0: /opt/ecmwf/eccodes/bin/grib_to_netcdf -S param -o /cache/data4/adaptor.mars.internal-1584704431.3029954-14866-24-a3017812-b06b-4c9d-aee6-e5a74bbbfbc9.nc /cache/tmp/a3017812-b06b-4c9d-aee6-e5a74bbbfbc9-adaptor.mars.internal-1584704431.3035216-14866-8-tmp.grib", Char},
-		}, f.Attrs)
+		assert.Equal(t, Attr{"TITLE", " OUTPUT FROM WRF V3.8.1 MODEL", Char}, f.Attrs[0])
 
 	})
 

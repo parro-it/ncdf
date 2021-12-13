@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	f, err := ncdf.Open("fixtures/example.nc")
+	f, err := ncdf.Open("fixtures/exampl2.nc")
 	if err != nil {
 		panic(nil)
 	}
