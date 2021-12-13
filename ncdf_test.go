@@ -57,12 +57,12 @@ func TestCheck(t *testing.T) {
 		defer f.Close()
 		assert.NoError(t, err)
 		f.Unlink()
-		assert.Equal(t, []types.Dimension{
-			{Name: "Time", Len: 0},
-			{Name: "DateStrLen", Len: 19},
-			{Name: "west_east", Len: 429},
-			{Name: "south_north", Len: 468},
-			{Name: "num_press_levels_stag", Len: 11},
+		assert.Equal(t, map[string]types.Dimension{
+			"Time":                  {Name: "Time", Len: 0},
+			"DateStrLen":            {Name: "DateStrLen", Len: 19},
+			"west_east":             {Name: "west_east", Len: 429},
+			"south_north":           {Name: "south_north", Len: 468},
+			"num_press_levels_stag": {Name: "num_press_levels_stag", Len: 11},
 		}, f.Dimensions)
 
 	})
@@ -72,18 +72,19 @@ func TestCheck(t *testing.T) {
 		require.NotNil(t, f)
 		defer f.Close()
 		assert.NoError(t, err)
-		assert.Equal(t, "Time", f.Vars[0].Dimensions[0].Name)
 		f.Unlink()
-		f.Vars[0].Dimensions = make([]*types.Dimension, 0)
+		time := f.Vars["Times"]
+		assert.Equal(t, "Time", time.Dimensions[0].Name)
+		time.Dimensions = make([]*types.Dimension, 0)
 
 		assert.Equal(t, types.Var{
 			Dimensions: []*types.Dimension{},
-			Attrs:      []types.Attr{},
+			Attrs:      map[string]types.Attr{},
 			Name:       "Times",
 			Type:       2,
 			Size:       20,
 			Offset:     0x2f5c,
-		}, f.Vars[0])
+		}, time)
 
 	})
 
@@ -97,7 +98,7 @@ func TestCheck(t *testing.T) {
 			Name: "TITLE",
 			Val:  " OUTPUT FROM WRF V3.8.1 MODEL",
 			Type: types.Char,
-		}, f.Attrs[0])
+		}, f.Attrs["TITLE"])
 
 	})
 

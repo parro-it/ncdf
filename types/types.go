@@ -15,14 +15,65 @@ type Version [4]byte
 // It has an os.File field containing
 // the fd of file being read.
 type File struct {
-	fd         *os.File
-	Count      uint64
-	Version    Version
-	NumRecs    int32
-	Dimensions []Dimension
-	Attrs      []Attr
-	Vars       []Var
+	fd            *os.File
+	Count         uint64
+	Version       Version
+	NumRecs       int32
+	Dimensions    map[string]Dimension
+	DimensionsSeq []Dimension
+	Attrs         map[string]Attr
+	Vars          map[string]Var
 }
+
+type Tag int32
+
+const (
+	ZeroTag      Tag = 0x00 // ZERO = \x00 \x00 \x00 \x00 // 32-bit zero
+	DimensionTag Tag = 0x0A // NC_DIMENSION = \x00 \x00 \x00 \x0A // tag for list of dimensions
+	VariableTag  Tag = 0x0B // NC_VARIABLE = \x00 \x00 \x00 \x0B // tag for list of variables
+	AttributeTag Tag = 0x0C // NC_ATTRIBUTE = \x00 \x00 \x00 \x0C // tag for list of attributes
+)
+
+// Var represents a netcdf variable
+type Var struct {
+	Dimensions []*Dimension
+	Attrs      map[string]Attr
+	Name       string
+	Type       Type
+	Size       int32
+	Offset     uint64
+	file       *File
+}
+
+// BaseType ...
+type BaseType interface {
+	byte | int16 | int32 | float32 | float64
+}
+
+type Attr struct {
+	Name string
+	Val  interface{}
+	Type Type
+	file *File
+}
+
+type Dimension struct {
+	Name string
+	Len  int32
+	file *File
+}
+
+type Type int32
+
+const (
+	Byte   Type = 1 // NC_BYTE = \x00 \x00 \x00 \x01 // 8-bit signed integers
+	Char   Type = 2 // NC_CHAR = \x00 \x00 \x00 \x02 // text characters
+	Short  Type = 3 // NC_SHORT = \x00 \x00 \x00 \x03 // 16-bit signed integers
+	Int    Type = 4 // NC_INT = \x00 \x00 \x00 \x04 // 32-bit signed integers
+	Float  Type = 5 // NC_FLOAT = \x00 \x00 \x00 \x05 // IEEE single precision floats
+	Double Type = 6 // NC_DOUBLE = \x00 \x00 \x00 \x06 // IEEE double precision floats
+
+)
 
 func (f *File) Read(data interface{}) error {
 	return binary.Read(f.fd, binary.BigEndian, data)
@@ -36,23 +87,6 @@ func (f *File) ReadBytes(n int) ([]byte, error) {
 	}
 	return buf, nil
 }
-
-// Var represents a netcdf variable
-type Var struct {
-	Dimensions []*Dimension
-	Attrs      []Attr
-	Name       string
-	Type       Type
-	Size       int32
-	Offset     uint64
-	file       *File
-}
-
-// BaseType ...
-type BaseType interface {
-	byte | int16 | int32 | float32 | float64
-}
-
 func (f *File) Unlink() {
 	for i, d := range f.Dimensions {
 		d.file = nil
@@ -68,27 +102,6 @@ func (f *File) Unlink() {
 		a.file = nil
 		f.Attrs[i] = a
 	}
-}
-
-func (a *Attr) UnlinkFile() {
-	a.file = nil
-}
-
-func (d *Dimension) UnlinkFile() {
-	d.file = nil
-}
-
-type Attr struct {
-	Name string
-	Val  interface{}
-	Type Type
-	file *File
-}
-
-type Dimension struct {
-	Name string
-	Len  int32
-	file *File
 }
 
 func NewFile(fd *os.File) *File {
@@ -123,18 +136,6 @@ func (f *File) Close() error {
 	return f.fd.Close()
 }
 
-type Type int32
-
-const (
-	Byte   Type = 1 // NC_BYTE = \x00 \x00 \x00 \x01 // 8-bit signed integers
-	Char   Type = 2 // NC_CHAR = \x00 \x00 \x00 \x02 // text characters
-	Short  Type = 3 // NC_SHORT = \x00 \x00 \x00 \x03 // 16-bit signed integers
-	Int    Type = 4 // NC_INT = \x00 \x00 \x00 \x04 // 32-bit signed integers
-	Float  Type = 5 // NC_FLOAT = \x00 \x00 \x00 \x05 // IEEE single precision floats
-	Double Type = 6 // NC_DOUBLE = \x00 \x00 \x00 \x06 // IEEE double precision floats
-
-)
-
 func (t Type) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, t.String())), nil
 }
@@ -161,15 +162,6 @@ func (t Type) String() string {
 
 	return fmt.Sprintf("[UNKNOWN:%d]", t)
 }
-
-type Tag int32
-
-const (
-	ZeroTag      Tag = 0x00 // ZERO = \x00 \x00 \x00 \x00 // 32-bit zero
-	DimensionTag Tag = 0x0A // NC_DIMENSION = \x00 \x00 \x00 \x0A // tag for list of dimensions
-	VariableTag  Tag = 0x0B // NC_VARIABLE = \x00 \x00 \x00 \x0B // tag for list of variables
-	AttributeTag Tag = 0x0C // NC_ATTRIBUTE = \x00 \x00 \x00 \x0C // tag for list of attributes
-)
 
 func (t Tag) String() string {
 	switch t {
