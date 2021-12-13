@@ -48,6 +48,11 @@ type Var struct {
 	file       *File
 }
 
+// BaseType ...
+type BaseType interface {
+	byte | int16 | int32 | float32 | float64
+}
+
 func (f *File) Unlink() {
 	for i, d := range f.Dimensions {
 		d.file = nil

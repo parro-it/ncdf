@@ -38,42 +38,27 @@ func readHeader(f *types.File) error {
 	return nil
 }
 
-// BaseType ...
-type BaseType interface {
-	byte | int16 | int32 | float32 | float64
-}
-
-func readAttrValue[T BaseType](f *types.File) ([]T, error) {
-	var val T
-	var res []T
-	nelems, err := readVal[int32](f)
+func readDimensions(f *types.File) ([]types.Dimension, error) {
+	t, err := readTag(f)
 	if err != nil {
-		var empty []T
-		return empty, err
+		return nil, err
 	}
+	if t != types.DimensionTag {
+		return nil, fmt.Errorf("Expected DimensionTag, got %s", t.String())
+	}
+	return readListOf(f, func(f *types.File) (d types.Dimension, err error) {
+		d = types.NewDimension(f)
 
-	for i := int32(0); i < nelems; i++ {
-		val, err = readVal[T](f)
-		if err != nil {
-			var empty []T
-			return empty, err
+		if d.Name, err = readString(f); err != nil {
+			return d, err
 		}
-		res = append(res, val)
-	}
 
-	restCount := 4 - (f.Count % 4)
-	if restCount == 4 {
-		return res, nil
-	}
+		if d.Len, err = readVal[int32](f); err != nil {
+			return d, err
+		}
 
-	_, err = f.ReadBytes(int(restCount))
-	if err != nil {
-		var empty []T
-		return empty, err
-	}
-	f.Count += restCount
-
-	return res, nil
+		return
+	})
 }
 
 func readAttributes(f *types.File) ([]types.Attr, error) {
@@ -116,35 +101,6 @@ func readAttributes(f *types.File) ([]types.Attr, error) {
 
 		return
 	})
-}
-
-func readValue(a types.Attr, f *types.File) (interface{}, error) {
-	t := a.Type
-	if t == types.Double {
-		return readAttrValue[float64](f)
-	}
-
-	if t == types.Short {
-		return readAttrValue[int16](f)
-	}
-
-	if t == types.Int {
-		return readAttrValue[int32](f)
-	}
-
-	if t == types.Byte {
-		return readAttrValue[byte](f)
-	}
-
-	if t == types.Float {
-		return readAttrValue[float32](f)
-	}
-
-	if t == types.Char {
-		return readString(f)
-	}
-
-	return nil, fmt.Errorf("Unsupported type <%s>", t)
 }
 
 func readVars(f *types.File) ([]types.Var, error) {
@@ -194,6 +150,68 @@ func readVars(f *types.File) ([]types.Var, error) {
 	})
 }
 
+func readAttrValue[T types.BaseType](f *types.File) ([]T, error) {
+	var val T
+	var res []T
+	nelems, err := readVal[int32](f)
+	if err != nil {
+		var empty []T
+		return empty, err
+	}
+
+	for i := int32(0); i < nelems; i++ {
+		val, err = readVal[T](f)
+		if err != nil {
+			var empty []T
+			return empty, err
+		}
+		res = append(res, val)
+	}
+
+	restCount := 4 - (f.Count % 4)
+	if restCount == 4 {
+		return res, nil
+	}
+
+	_, err = f.ReadBytes(int(restCount))
+	if err != nil {
+		var empty []T
+		return empty, err
+	}
+	f.Count += restCount
+
+	return res, nil
+}
+
+func readValue(a types.Attr, f *types.File) (interface{}, error) {
+	t := a.Type
+	if t == types.Double {
+		return readAttrValue[float64](f)
+	}
+
+	if t == types.Short {
+		return readAttrValue[int16](f)
+	}
+
+	if t == types.Int {
+		return readAttrValue[int32](f)
+	}
+
+	if t == types.Byte {
+		return readAttrValue[byte](f)
+	}
+
+	if t == types.Float {
+		return readAttrValue[float32](f)
+	}
+
+	if t == types.Char {
+		return readString(f)
+	}
+
+	return nil, fmt.Errorf("Unsupported type <%s>", t)
+}
+
 func readListOf[T any](f *types.File, fn func(f *types.File) (T, error)) (list []T, err error) {
 	len, err := readVal[int32](f)
 	if err != nil {
@@ -210,29 +228,6 @@ func readListOf[T any](f *types.File, fn func(f *types.File) (T, error)) (list [
 	}
 
 	return list, nil
-}
-
-func readDimensions(f *types.File) ([]types.Dimension, error) {
-	t, err := readTag(f)
-	if err != nil {
-		return nil, err
-	}
-	if t != types.DimensionTag {
-		return nil, fmt.Errorf("Expected DimensionTag, got %s", t.String())
-	}
-	return readListOf(f, func(f *types.File) (d types.Dimension, err error) {
-		d = types.NewDimension(f)
-
-		if d.Name, err = readString(f); err != nil {
-			return d, err
-		}
-
-		if d.Len, err = readVal[int32](f); err != nil {
-			return d, err
-		}
-
-		return
-	})
 }
 
 func readString(f *types.File) (string, error) {
@@ -253,6 +248,16 @@ func readVal[T any](f *types.File) (T, error) {
 	return val, nil
 }
 
+func readTag(f *types.File) (types.Tag, error) {
+
+	buf, err := f.ReadBytes(4)
+	if err != nil {
+		return types.ZeroTag, err
+	}
+	f.Count += 4
+	return types.Tag(buf[3]), err
+}
+
 // Open ...
 func Open(file string) (*types.File, error) {
 
@@ -266,14 +271,4 @@ func Open(file string) (*types.File, error) {
 	}
 
 	return f, nil
-}
-
-func readTag(f *types.File) (types.Tag, error) {
-
-	buf, err := f.ReadBytes(4)
-	if err != nil {
-		return types.ZeroTag, err
-	}
-	f.Count += 4
-	return types.Tag(buf[3]), err
 }
