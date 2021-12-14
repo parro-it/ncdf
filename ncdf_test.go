@@ -75,12 +75,12 @@ func TestCheck(t *testing.T) {
 		defer f.Close()
 		assert.NoError(t, err)
 		f.Unlink()
-		assert.Equal(t, map[string]types.Dimension{
-			"Time":                  {Name: "Time", Len: 0},
-			"DateStrLen":            {Name: "DateStrLen", Len: 19},
-			"west_east":             {Name: "west_east", Len: 429},
-			"south_north":           {Name: "south_north", Len: 468},
-			"num_press_levels_stag": {Name: "num_press_levels_stag", Len: 11},
+		assert.Equal(t, []types.Dimension{
+			{Name: "Time", Len: 0},
+			{Name: "DateStrLen", Len: 19},
+			{Name: "west_east", Len: 429},
+			{Name: "south_north", Len: 468},
+			{Name: "num_press_levels_stag", Len: 11},
 		}, f.Dimensions)
 
 	})

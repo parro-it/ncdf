@@ -23,7 +23,7 @@ func readHeader(f *types.File) error {
 		return err
 	}
 
-	if f.Dimensions, f.DimensionsSeq, err = readDimensions(f); err != nil {
+	if f.Dimensions, err = readDimensions(f); err != nil {
 		return err
 	}
 
@@ -38,17 +38,17 @@ func readHeader(f *types.File) error {
 	return nil
 }
 
-func readDimensions(f *types.File) (map[string]types.Dimension, []*types.Dimension, error) {
+func readDimensions(f *types.File) ([]types.Dimension, error) {
 	t, err := readTag(f)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if t == types.ZeroTag {
-		m, err := sectionNotPresent[types.Dimension](f)
-		return m, []*types.Dimension{}, err
+		_, err := sectionNotPresent[types.Dimension](f)
+		return nil, err
 	}
 	if t != types.DimensionTag {
-		return nil, nil, fmt.Errorf("Expected DimensionTag, got %s", t.String())
+		return nil, fmt.Errorf("Expected DimensionTag, got %s", t.String())
 	}
 	lst, err := readListOf(f, func(f *types.File) (d types.Dimension, err error) {
 		d = types.NewDimension(f)
@@ -64,16 +64,10 @@ func readDimensions(f *types.File) (map[string]types.Dimension, []*types.Dimensi
 		return
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	res := map[string]types.Dimension{}
-	seq := make([]*types.Dimension, len(lst))
-	for i, d := range lst {
-		res[d.Name] = d
-		seq[i] = &lst[i]
 
-	}
-	return res, seq, nil
+	return lst, nil
 }
 
 func sectionNotPresent[T any](f *types.File) (map[string]T, error) {
@@ -155,7 +149,7 @@ func readVars(f *types.File) (map[string]types.Var, error) {
 			if err != nil {
 				return nil, err
 			}
-			return f.DimensionsSeq[id], nil
+			return &f.Dimensions[id], nil
 		})
 
 		if err != nil {

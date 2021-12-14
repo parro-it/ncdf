@@ -15,14 +15,14 @@ type Version [4]byte
 // It has an os.File field containing
 // the fd of file being read.
 type File struct {
-	fd            io.ReadSeekCloser
-	Count         uint64
-	Version       Version
-	NumRecs       int32
-	Dimensions    map[string]Dimension
-	DimensionsSeq []*Dimension
-	Attrs         map[string]Attr
-	Vars          map[string]Var
+	fd      io.ReadSeekCloser
+	Count   uint64
+	Version Version
+	NumRecs int32
+	//Dimensions    map[string]Dimension
+	Dimensions []Dimension
+	Attrs      map[string]Attr
+	Vars       map[string]Var
 }
 
 type Tag int32
