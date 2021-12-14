@@ -3,7 +3,7 @@ package types
 import (
 	"encoding/binary"
 	"fmt"
-	"os"
+	"io"
 )
 
 // Version contains magic number for netcdf
@@ -15,7 +15,7 @@ type Version [4]byte
 // It has an os.File field containing
 // the fd of file being read.
 type File struct {
-	fd            *os.File
+	fd            io.ReadSeekCloser
 	Count         uint64
 	Version       Version
 	NumRecs       int32
@@ -109,7 +109,7 @@ func (f *File) Unlink() {
 	}
 }
 
-func NewFile(fd *os.File) *File {
+func NewFile(fd io.ReadSeekCloser) *File {
 	return &File{fd: fd}
 }
 

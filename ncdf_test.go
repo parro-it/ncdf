@@ -1,8 +1,6 @@
 package ncdf
 
 import (
-	"fmt"
-	"os"
 	"testing"
 
 	"github.com/parro-it/ncdf/types"
@@ -11,9 +9,6 @@ import (
 )
 
 func TestOpen(t *testing.T) {
-	i, err := os.Stat("fixtures/exampl2.nc")
-	require.NoError(t, err)
-	fmt.Println(i)
 	f, err := Open("fixtures/exampl2.nc")
 	require.NoError(t, err)
 	assert.NotNil(t, f)
@@ -29,19 +24,17 @@ func TestVarData(t *testing.T) {
 	t2 := f.Vars["T2"]
 	dim := 1
 	for _, d := range t2.Dimensions {
-		fmt.Println(d.Name)
 		if d.Len == 0 {
 			continue
 		}
 		dim *= int(d.Len)
 	}
-	fmt.Println("Dimensions", dim*4)
 
 	values, err := VarData[float32](t2, f)
 	require.NoError(t, err)
 	require.Equal(t, dim*4, len(values))
 
-	fmt.Println(values[0:10], len(values))
+	require.Equal(t, []float32{275.82614, 275.82596, 275.98535, 275.60385, 275.5405, 275.5339, 275.5177, 275.3091, 275.31165, 275.27158}, values[0:10])
 
 }
 

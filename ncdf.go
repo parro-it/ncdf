@@ -176,7 +176,6 @@ func readVars(f *types.File) (map[string]types.Var, error) {
 		if v.Offset, err = readVal[uint64](f); err != nil {
 			return v, err
 		}
-		fmt.Println(v.Name, v.Type)
 		return
 	})
 
@@ -213,12 +212,13 @@ func readAttrValue[T types.BaseType](f *types.File) ([]T, error) {
 		return res, nil
 	}
 
-	_, err = f.ReadBytes(int(restCount))
+	f.Count += restCount
+	err = f.Seek(int64(f.Count))
 	if err != nil {
+		f.Count -= restCount
 		var empty []T
 		return empty, err
 	}
-	f.Count += restCount
 
 	return res, nil
 }
