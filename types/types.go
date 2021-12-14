@@ -20,7 +20,7 @@ type File struct {
 	Version       Version
 	NumRecs       int32
 	Dimensions    map[string]Dimension
-	DimensionsSeq []Dimension
+	DimensionsSeq []*Dimension
 	Attrs         map[string]Attr
 	Vars          map[string]Var
 }
@@ -77,6 +77,11 @@ const (
 
 func (f *File) Read(data interface{}) error {
 	return binary.Read(f.fd, binary.BigEndian, data)
+}
+
+func (f *File) Seek(n int64) error {
+	_, err := f.fd.Seek(n, 0)
+	return err
 }
 
 func (f *File) ReadBytes(n int) ([]byte, error) {

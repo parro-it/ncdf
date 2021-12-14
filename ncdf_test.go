@@ -20,6 +20,31 @@ func TestOpen(t *testing.T) {
 	f.Close()
 }
 
+func TestVarData(t *testing.T) {
+	f, err := Open("fixtures/exampl2.nc")
+	require.NoError(t, err)
+	require.NotNil(t, f)
+	defer f.Close()
+
+	t2 := f.Vars["T2"]
+	dim := 1
+	for _, d := range t2.Dimensions {
+		fmt.Println(d.Name)
+		if d.Len == 0 {
+			continue
+		}
+		dim *= int(d.Len)
+	}
+	fmt.Println("Dimensions", dim*4)
+
+	values, err := VarData[float32](t2, f)
+	require.NoError(t, err)
+	require.Equal(t, dim*4, len(values))
+
+	fmt.Println(values[0:10], len(values))
+
+}
+
 func TestCheck(t *testing.T) {
 	t.Run("bad magic string", func(t *testing.T) {
 		f := &types.File{

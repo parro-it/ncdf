@@ -23,12 +23,10 @@ func readHeader(f *types.File) error {
 		return err
 	}
 
-	if f.Dimensions, err = readDimensions(f); err != nil {
+	if f.Dimensions, f.DimensionsSeq, err = readDimensions(f); err != nil {
 		return err
 	}
-	for _, d := range f.Dimensions {
-		f.DimensionsSeq = append(f.DimensionsSeq, d)
-	}
+
 	if f.Attrs, err = readAttributes(f); err != nil {
 		return err
 	}
@@ -40,13 +38,17 @@ func readHeader(f *types.File) error {
 	return nil
 }
 
-func readDimensions(f *types.File) (map[string]types.Dimension, error) {
+func readDimensions(f *types.File) (map[string]types.Dimension, []*types.Dimension, error) {
 	t, err := readTag(f)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+	if t == types.ZeroTag {
+		m, err := sectionNotPresent[types.Dimension](f)
+		return m, []*types.Dimension{}, err
 	}
 	if t != types.DimensionTag {
-		return nil, fmt.Errorf("Expected DimensionTag, got %s", t.String())
+		return nil, nil, fmt.Errorf("Expected DimensionTag, got %s", t.String())
 	}
 	lst, err := readListOf(f, func(f *types.File) (d types.Dimension, err error) {
 		d = types.NewDimension(f)
@@ -62,13 +64,29 @@ func readDimensions(f *types.File) (map[string]types.Dimension, error) {
 		return
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	res := map[string]types.Dimension{}
-	for _, d := range lst {
+	seq := make([]*types.Dimension, len(lst))
+	for i, d := range lst {
 		res[d.Name] = d
+		seq[i] = &lst[i]
+
 	}
-	return res, nil
+	return res, seq, nil
+}
+
+func sectionNotPresent[T any](f *types.File) (map[string]T, error) {
+	t2, err := readTag(f)
+	if err != nil {
+		return nil, err
+	}
+
+	if t2 != types.ZeroTag {
+		return nil, fmt.Errorf("Expected ZeroTag, got %s", t2.String())
+	}
+
+	return map[string]T{}, nil
 }
 
 func readAttributes(f *types.File) (map[string]types.Attr, error) {
@@ -78,16 +96,7 @@ func readAttributes(f *types.File) (map[string]types.Attr, error) {
 	}
 
 	if t == types.ZeroTag {
-		t2, err := readTag(f)
-		if err != nil {
-			return nil, err
-		}
-
-		if t2 != types.ZeroTag {
-			return nil, fmt.Errorf("Expected ZeroTag, got %s", t2.String())
-		}
-
-		return map[string]types.Attr{}, nil
+		return sectionNotPresent[types.Attr](f)
 	}
 
 	if t != types.AttributeTag {
@@ -126,6 +135,10 @@ func readVars(f *types.File) (map[string]types.Var, error) {
 	if err != nil {
 		return nil, err
 	}
+	if t == types.ZeroTag {
+		return sectionNotPresent[types.Var](f)
+	}
+
 	if t != types.VariableTag {
 		return nil, fmt.Errorf("Expected VariableTag, got %s", t.String())
 	}
@@ -142,7 +155,7 @@ func readVars(f *types.File) (map[string]types.Var, error) {
 			if err != nil {
 				return nil, err
 			}
-			return &f.DimensionsSeq[id], nil
+			return f.DimensionsSeq[id], nil
 		})
 
 		if err != nil {
@@ -298,4 +311,15 @@ func Open(file string) (*types.File, error) {
 	}
 
 	return f, nil
+}
+
+func VarData[T types.BaseType](v types.Var, f *types.File) ([]T, error) {
+	if err := f.Seek(int64(v.Offset)); err != nil {
+		return nil, err
+	}
+	data := make([]T, v.Size)
+	if err := f.Read(data); err != nil {
+		return nil, err
+	}
+	return data, nil
 }
