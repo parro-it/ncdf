@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/parro-it/ncdf"
@@ -13,9 +12,10 @@ func main() {
 		panic(nil)
 	}
 	defer f.Close()
-	buf, err := json.MarshalIndent(f, "  ", "  ")
+	/*buf, err := json.MarshalIndent(f, "  ", "  ")
 	if err != nil {
 		panic(nil)
 	}
-	fmt.Println(string(buf))
+	fmt.Println(string(buf))*/
+	fmt.Println(f.CDL())
 }
