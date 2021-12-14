@@ -207,7 +207,7 @@ func readAttrValue[T types.BaseType](f *types.File) ([]T, error) {
 	}
 
 	f.Count += restCount
-	err = f.Seek(int64(f.Count))
+	err = f.SeekTo(int64(f.Count))
 	if err != nil {
 		f.Count -= restCount
 		var empty []T
@@ -307,8 +307,9 @@ func Open(file string) (*types.File, error) {
 	return f, nil
 }
 
+// VarData ...
 func VarData[T types.BaseType](v types.Var, f *types.File) ([]T, error) {
-	if err := f.Seek(int64(v.Offset)); err != nil {
+	if err := f.SeekTo(int64(v.Offset)); err != nil {
 		return nil, err
 	}
 	data := make([]T, v.Size)
