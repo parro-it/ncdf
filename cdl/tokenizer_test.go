@@ -38,10 +38,30 @@ func (r failingReader) Read(p []byte) (n int, err error) {
 }
 
 func TestTokenize(t *testing.T) {
+	t.Run("uncomplete comment", func(t *testing.T) {
+		tks, err := Tokenize(strings.NewReader(`/`))
+		assert.Empty(t, <-tks)
+		e := <-err
+		assert.EqualError(t, e, "Tokenization failed: unexpected char `/`")
+
+	})
+
 	assertTokenizeTo(t, "integers", "42", Token{
 		Type:   TkInt,
 		Text:   "42",
 		NumVal: 42,
+	})
+
+	assertTokenizeTo(t, "comments", "// this is a comment\n42 // this is a comment", Token{
+		Type:   TkInt,
+		Text:   "42",
+		NumVal: 42,
+	})
+
+	assertTokenizeTo(t, "decimals", "42.15", Token{
+		Type:   TkDec,
+		Text:   "42.15",
+		NumVal: 42.15,
 	})
 
 	assertTokenizeTo(t, "name", "ciao", Token{
@@ -103,7 +123,7 @@ func TestTokenize(t *testing.T) {
 		Type: TkComma,
 		Text: ",",
 	})
-	return
+
 	assertTokenizeTo(t, "empty source", "", Token{
 		Type: TkEmpty,
 	})
@@ -116,18 +136,19 @@ func TestTokenize(t *testing.T) {
 
 	})
 
-	/*
-		t.Run("wrong type", func(t *testing.T) {
-			assert.Equal(t, "<Unknown type 99>", TkType(99).String())
-			assert.Equal(t, "TkStr", TkStr.String())
-		})
-	*/
-
 	t.Run("wrong float", func(t *testing.T) {
 		tks, err := Tokenize(strings.NewReader("12.12.12"))
 		assert.Empty(t, <-tks)
 		e := <-err
-		assert.EqualError(t, e, "Tokenization failed: strconv.ParseFloat: parsing \"12.12.12\": invalid syntax")
+		assert.EqualError(t, e, "Tokenization failed: unexpected dot")
+
+	})
+
+	t.Run("unclosed string", func(t *testing.T) {
+		tks, err := Tokenize(strings.NewReader(`"ciao`))
+		assert.Empty(t, <-tks)
+		e := <-err
+		assert.EqualError(t, e, "Tokenization failed: unclosed string")
 
 	})
 

@@ -152,24 +152,16 @@ func (tkn *tokenizer) readIdent() {
 }
 
 // TODO: implements comments parsing
-func (tkn *tokenizer) skipComment(until string) {
-	prev := []rune{}
-	for !tkn.atEnd {
-		prev = append(prev, tkn.curr)
-
-		for len(prev) > len(until) {
-			prev = prev[1:]
-		}
-
-		tkn.readRune()
-		if string(prev) == until {
-			return
-		}
+func (tkn *tokenizer) skipComment() {
+	tkn.readRune()
+	if tkn.curr != '/' {
+		panic("unexpected char `/`")
 	}
-}
 
-func isParen(ch rune) bool {
-	return ch == '(' || ch == ')' || ch == '[' || ch == ']' || ch == '{' || ch == '}'
+	tkn.readRune()
+	for !tkn.atEnd && tkn.curr != '\n' {
+		tkn.readRune()
+	}
 }
 
 func (tkn *tokenizer) read() {
@@ -177,7 +169,8 @@ func (tkn *tokenizer) read() {
 	for !tkn.atEnd {
 		//fmt.Printf("%c %t\n", tkn.curr, unicode.IsSymbol(tkn.curr) || unicode.IsPunct(tkn.curr))
 		switch true {
-
+		case tkn.curr == '/':
+			tkn.skipComment()
 		case tkn.curr == '"':
 			tkn.readString()
 		case unicode.IsDigit(tkn.curr):
@@ -220,6 +213,7 @@ func (tkn *tokenizer) read() {
 	close(tkn.res)
 }
 
+// TODO: parse negative numbers
 func (tkn *tokenizer) readNumber() {
 	tokType := TkInt
 	text := ""
@@ -235,10 +229,7 @@ func (tkn *tokenizer) readNumber() {
 		tkn.readRune()
 	}
 	// TODO: parse integers with dedicated func
-	num, err := strconv.ParseFloat(text, 64)
-	if err != nil && err != io.EOF {
-		panic(err)
-	}
+	num, _ := strconv.ParseFloat(text, 64)
 
 	tkn.res <- Token{
 		Type: tokType,
@@ -251,6 +242,7 @@ func (tkn *tokenizer) readNumber() {
 func (tkn *tokenizer) readRune() {
 	r, _, err := tkn.r.ReadRune()
 	if err == io.EOF {
+		tkn.curr = rune(0)
 		tkn.atEnd = true
 		return
 	}
@@ -275,7 +267,7 @@ func (tkn *tokenizer) readString() {
 	}
 
 	if tkn.curr != '"' {
-		panic("Unclosed string")
+		panic("unclosed string")
 	}
 	tkn.readRune()
 
