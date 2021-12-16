@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -45,8 +46,22 @@ func (f *Attr) CDL() string {
 		return fmt.Sprintf("%s = %f;", f.Name, v[0])
 	case []float64:
 		return fmt.Sprintf("%s = %f;", f.Name, v[0])
+
+	case int:
+		return fmt.Sprintf("%s = %d;", f.Name, v)
+	case int32:
+		return fmt.Sprintf("%s = %d;", f.Name, v)
+	case int16:
+		return fmt.Sprintf("%s = %d;", f.Name, v)
+	case byte:
+		return fmt.Sprintf("%s = %d;", f.Name, v)
+	case float32:
+		return fmt.Sprintf("%s = %f;", f.Name, v)
+	case float64:
+		return fmt.Sprintf("%s = %f;", f.Name, v)
 	}
-	return fmt.Sprintf("~UNKNOWN TYPE %v~", f.Val)
+
+	return fmt.Sprintf("~UNKNOWN TYPE %v~", reflect.TypeOf(f.Val))
 }
 
 // CDL ...

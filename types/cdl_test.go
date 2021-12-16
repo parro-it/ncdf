@@ -9,15 +9,15 @@ import (
 func TestDimension(t *testing.T) {
 	d := Dimension{
 		Name: "test",
-		Len:  42,
+		Len:  int32(42),
 	}
 	assert.Equal(t, "test = 42;", d.CDL())
 }
 
 func TestDimensions(t *testing.T) {
 	dd := []Dimension{
-		{Name: "test", Len: 42},
-		{Name: "ciao-mondo", Len: 12},
+		{Name: "test", Len: int32(42)},
+		{Name: "ciao-mondo", Len: int32(12)},
 	}
 	assert.Equal(t, `dimensions:
     test = 42;
