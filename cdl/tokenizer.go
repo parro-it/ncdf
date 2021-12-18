@@ -54,6 +54,13 @@ const (
 	// TkNetCdf - netcdf string
 	TkNetCdf
 
+	// TkDimensions - dimensions string
+	TkDimensions
+	// TkVariables - variables string
+	TkVariables
+	// TkData - data string
+	TkData
+
 	// TkStr ...
 	TkStr
 	// TkInt ...
@@ -84,6 +91,10 @@ type Token struct {
 	Type   TokenType
 	Text   string
 	NumVal float64
+}
+
+func (t Token) String() string {
+	return fmt.Sprintf("[%d,%s]", t.Type, t.Text)
 }
 
 type tokenizer struct {
@@ -129,7 +140,7 @@ func Tokenize(r io.Reader) (ch chan Token, errs chan error) {
 }
 
 // TODO: name must support special charaters aftere first letter
-func (tkn *tokenizer) readIdent() {
+func (tkn *tokenizer) readName() {
 	var buf strings.Builder
 	for !tkn.atEnd && (unicode.IsLetter(tkn.curr) || unicode.IsDigit(tkn.curr)) {
 		buf.WriteRune(tkn.curr)
@@ -142,6 +153,12 @@ func (tkn *tokenizer) readIdent() {
 		tkType = TkVarType
 	case "netcdf":
 		tkType = TkNetCdf
+	case "dimensions":
+		tkType = TkDimensions
+	case "variables":
+		tkType = TkVariables
+	case "data":
+		tkType = TkData
 	default:
 		tkType = TkName
 	}
@@ -151,7 +168,6 @@ func (tkn *tokenizer) readIdent() {
 	}
 }
 
-// TODO: implements comments parsing
 func (tkn *tokenizer) skipComment() {
 	tkn.readRune()
 	if tkn.curr != '/' {
@@ -177,7 +193,7 @@ func (tkn *tokenizer) read() {
 			tkn.readNumber()
 
 		case unicode.IsLetter(tkn.curr):
-			tkn.readIdent()
+			tkn.readName()
 		default:
 			tk := Token{
 				Pos:  CodePosition{tkn.curpos, tkn.curpos},

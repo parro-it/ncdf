@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TODO: add stringifications to token to improve
+// test names
 func assertTokenizeTo(t *testing.T, name, code string, expected ...interface{}) {
 	t.Run(fmt.Sprintf("%s -> %v", code, expected), func(t *testing.T) {
 		r := strings.NewReader(code)
@@ -74,7 +76,6 @@ func TestTokenize(t *testing.T) {
 		Text: "42",
 	})
 
-	// TODO: reserved word for netcdf
 	assertTokenizeTo(t, "reserved words", `byte short int float double char`, Token{
 		Type: TkVarType,
 		Text: "byte",
@@ -98,6 +99,18 @@ func TestTokenize(t *testing.T) {
 		Type: TkNetCdf,
 		Text: "netcdf",
 	})
+
+	assertTokenizeTo(t, "dimensions variables data", `dimensions variables data`, Token{
+		Type: TkDimensions,
+		Text: "dimensions",
+	}, Token{
+		Type: TkVariables,
+		Text: "variables",
+	}, Token{
+		Type: TkData,
+		Text: "data",
+	})
+
 	assertTokenizeTo(t, "single chars", "{}()=:;,", Token{
 		Type: TkCurOpen,
 		Text: "{",
