@@ -72,18 +72,26 @@ func (p *Parser) parseVariables(f *types.File) bool {
 		if p.last.Type != TkVarType {
 			panic("variable type expected")
 		}
+		v.Size = 1
+		for _, d := range f.Dimensions {
+			v.Size *= d.Len
+		}
 		switch p.last.Text {
 		case "float":
+			v.Size *= 4
 			v.Type = types.Float
 		case "byte":
 			v.Type = types.Byte
 		case "char":
 			v.Type = types.Char
 		case "short":
+			v.Size *= 2
 			v.Type = types.Short
 		case "int":
+			v.Size *= 4
 			v.Type = types.Int
 		case "double":
+			v.Size *= 8
 			v.Type = types.Double
 		}
 

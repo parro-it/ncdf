@@ -40,6 +40,7 @@ func TestFailures(t *testing.T) {
 				Dimensions: []*types.Dimension{{Name: "a", Len: 10}},
 				Name:       "pippo",
 				Type:       types.Float,
+				Size:       40,
 			},
 		},
 	}, "")
