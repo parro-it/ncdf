@@ -25,6 +25,31 @@ type File struct {
 	Vars       map[string]Var
 }
 
+func (f File) Size() int32 {
+	var szAttrs int
+	szAttrs += 4 // len
+	for _, it := range f.Attrs {
+		szAttrs += int(it.Size())
+	}
+
+	szAttrs += 4 // len
+	for _, it := range f.Dimensions {
+		szAttrs += int(it.Size())
+	}
+
+	szAttrs += 4 // len
+	for _, it := range f.Vars {
+		szAttrs += int(it.CmpSize())
+	}
+
+	return int32(
+		szAttrs +
+			4 + // numrecs
+			4 + // magic & Version
+			0)
+
+}
+
 // Tag ...
 type Tag int32
 
@@ -50,6 +75,22 @@ type Var struct {
 	file       *File
 }
 
+func (v Var) CmpSize() int32 {
+	var szAttrs int
+	for _, a := range v.Attrs {
+		szAttrs += int(a.Size())
+	}
+
+	return int32(
+		4 + len(v.Dimensions)*4 + // Dimensions
+			4 + szAttrs +
+			4 + len(v.Name) + // Name string
+			4 + //Size
+			8 + // Offset
+			4) // Type
+
+}
+
 // BaseType ...
 type BaseType interface {
 	byte | int16 | int32 | float32 | float64
@@ -63,11 +104,43 @@ type Attr struct {
 	file *File
 }
 
+// TODO: add support for array values
+func (a Attr) Size() int32 {
+	var sz int
+	switch a.Type {
+	case Double:
+		sz = 8
+	case Short:
+		sz = 2
+	case Int:
+		sz = 4
+	case Byte:
+		sz = 1
+	case Float:
+		sz = 4
+	case Char:
+		sz = 1
+	}
+
+	return int32(
+		4 + len(a.Name) + // Name string
+			4 + // Type
+			4 + // Len
+			sz)
+}
+
 // Dimension ...
 type Dimension struct {
 	Name string
 	Len  int32
 	file *File
+}
+
+func (d Dimension) Size() int32 {
+	return int32(
+		4 + len(d.Name) + // Name string
+			4) // Len
+
 }
 
 // Type ...
