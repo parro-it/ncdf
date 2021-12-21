@@ -51,7 +51,7 @@ func (f File) Size() int32 {
 }
 
 // Tag ...
-type Tag int32
+type Tag byte
 
 const (
 	// ZeroTag is ZERO tag = \x00 \x00 \x00 \x00 // 32-bit zero
@@ -105,6 +105,7 @@ type Attr struct {
 }
 
 // TODO: add support for array values
+// TODO: add padding for 32bit alignment
 func (a Attr) Size() int32 {
 	var sz int
 	switch a.Type {
