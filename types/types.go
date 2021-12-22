@@ -184,6 +184,7 @@ func (f *File) ReadBytes(n int) ([]byte, error) {
 
 // Unlink ...
 func (f *File) Unlink() {
+	f.fd = nil
 	for i, d := range f.Dimensions {
 		d.file = nil
 		f.Dimensions[i] = d
@@ -191,6 +192,11 @@ func (f *File) Unlink() {
 
 	for i, v := range f.Vars {
 		v.file = nil
+		for i, a := range v.Attrs {
+			a.file = nil
+			v.Attrs[i] = a
+		}
+
 		f.Vars[i] = v
 	}
 

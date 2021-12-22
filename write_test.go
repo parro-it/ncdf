@@ -24,12 +24,12 @@ var v = types.Var{
 	Attrs: map[string]types.Attr{
 		"tst1": {
 			Name: "tst1",
-			Val:  int16(42),
+			Val:  []int16{42},
 			Type: types.Short,
 		},
 		"tst2": {
 			Name: "tst2",
-			Val:  int16(42),
+			Val:  []int16{42},
 			Type: types.Short,
 		},
 	},
@@ -40,18 +40,18 @@ var v = types.Var{
 }
 
 var f = types.File{
-	Version:    [4]byte{},
+	Version:    [4]byte{'C', 'D', 'F', 2},
 	NumRecs:    0,
 	Dimensions: []types.Dimension{d, d},
 	Attrs: map[string]types.Attr{
 		"a1": {
 			Name: "a1",
-			Val:  int16(42),
+			Val:  []int16{42},
 			Type: types.Short,
 		},
 		"a2": {
 			Name: "a2",
-			Val:  int16(42),
+			Val:  []int16{42},
 			Type: types.Short,
 		},
 	},
@@ -69,12 +69,12 @@ var f = types.File{
 			Attrs: map[string]types.Attr{
 				"a1": {
 					Name: "a1",
-					Val:  int16(42),
+					Val:  []int16{42},
 					Type: types.Short,
 				},
 				"a2": {
 					Name: "a2",
-					Val:  int16(42),
+					Val:  []int16{42},
 					Type: types.Short,
 				},
 			},
@@ -102,7 +102,9 @@ func TestWriteHeader(t *testing.T) {
 	require.NoError(t, fout.Close())
 
 	f2, err := Open(fout.Name())
+	f2.Unlink()
+	f2.Count = 0
 	require.NoError(t, err)
-	assert.Equal(t, f, f2)
+	assert.Equal(t, &f, f2)
 	require.NoError(t, err)
 }

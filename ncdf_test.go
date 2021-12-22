@@ -59,7 +59,6 @@ func TestCheck(t *testing.T) {
 		}
 		assert.NoError(t, f.Version.Check())
 	})
-
 	t.Run("NumRecs", func(t *testing.T) {
 		f, err := Open("fixtures/exampl2.nc")
 		assert.NoError(t, err)
@@ -72,7 +71,7 @@ func TestCheck(t *testing.T) {
 	t.Run("Dimensions", func(t *testing.T) {
 		f, err := Open("fixtures/exampl2.nc")
 		require.NotNil(t, f)
-		defer f.Close()
+		f.Close()
 		assert.NoError(t, err)
 		f.Unlink()
 		assert.Equal(t, []types.Dimension{
@@ -88,7 +87,7 @@ func TestCheck(t *testing.T) {
 	t.Run("Variables", func(t *testing.T) {
 		f, err := Open("fixtures/exampl2.nc")
 		require.NotNil(t, f)
-		defer f.Close()
+		f.Close()
 		assert.NoError(t, err)
 		f.Unlink()
 		time := f.Vars["Times"]
@@ -109,7 +108,7 @@ func TestCheck(t *testing.T) {
 	t.Run("Global attributes", func(t *testing.T) {
 		f, err := Open("fixtures/exampl2.nc")
 		require.NotNil(t, f)
-		defer f.Close()
+		f.Close()
 		assert.NoError(t, err)
 		f.Unlink()
 		assert.Equal(t, types.Attr{
