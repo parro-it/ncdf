@@ -380,18 +380,18 @@ func readAttrValue[T types.BaseType](f *types.File, fd io.ReadSeeker) ([]T, erro
 		}
 		res = append(res, val)
 	}
+	if unsafe.Sizeof(val) < 4 {
+		sz := int64(unsafe.Sizeof(val) * uintptr(nelems))
+		restCount := 4 - (sz % 4)
+		if restCount == 4 {
+			return res, nil
+		}
 
-	restCount := 4 - (f.Count % 4)
-	if restCount == 4 {
-		return res, nil
-	}
-
-	f.Count += restCount
-	_, err = fd.Seek(int64(f.Count), io.SeekStart)
-	if err != nil {
-		f.Count -= restCount
-		var empty []T
-		return empty, err
+		_, err = fd.Seek(restCount, io.SeekCurrent)
+		if err != nil {
+			var empty []T
+			return empty, err
+		}
 	}
 
 	return res, nil
@@ -458,7 +458,6 @@ func readVal[T any](f *types.File, fd io.ReadSeeker) (T, error) {
 		var empty T
 		return empty, err
 	}
-	f.Count += uint64(unsafe.Sizeof(val))
 	return val, nil
 }
 
@@ -467,7 +466,6 @@ func readTag(f *types.File, fd io.ReadSeeker) (types.Tag, error) {
 	if err := binary.Read(fd, binary.BigEndian, &buf); err != nil {
 		return types.ZeroTag, err
 	}
-	f.Count += 4
 	return types.Tag(buf[3]), nil
 }
 

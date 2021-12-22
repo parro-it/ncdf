@@ -14,7 +14,7 @@ type Version [4]byte
 // the fd of file being read.
 type File struct {
 	//fd      io.ReadSeekCloser
-	Count   uint64
+	//Count   uint64
 	Version Version
 	NumRecs int32
 	//Dimensions    map[string]Dimension
