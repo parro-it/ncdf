@@ -70,7 +70,7 @@ type Var struct {
 	Type       Type
 	Size       int32
 	Offset     uint64
-	file       *File
+	//file       *File
 }
 
 func (v Var) CmpSize() int32 {
@@ -99,7 +99,7 @@ type Attr struct {
 	Name string
 	Val  interface{}
 	Type Type
-	file *File
+	//file *File
 }
 
 // TODO: add support for array values
@@ -132,7 +132,7 @@ func (a Attr) Size() int32 {
 type Dimension struct {
 	Name string
 	Len  int32
-	file *File
+	//file *File
 }
 
 func (d Dimension) Size() int32 {
@@ -181,7 +181,6 @@ func (f *File) ReadBytes(n int) ([]byte, error) {
 	return buf, nil
 }
 
-*/
 // Unlink ...
 func (f *File) Unlink() {
 	for i, d := range f.Dimensions {
@@ -204,6 +203,7 @@ func (f *File) Unlink() {
 		f.Attrs[i] = a
 	}
 }
+*/
 
 // NewFile ...
 func NewFile() *File {
@@ -211,18 +211,18 @@ func NewFile() *File {
 }
 
 // NewAttr ...
-func NewAttr(f *File) Attr {
-	return Attr{file: f}
+func NewAttr() Attr {
+	return Attr{}
 }
 
 // NewDimension ...
-func NewDimension(f *File) Dimension {
-	return Dimension{file: f}
+func NewDimension() Dimension {
+	return Dimension{}
 }
 
 // NewVar ...
-func NewVar(f *File) Var {
-	return Var{file: f}
+func NewVar() Var {
+	return Var{}
 }
 
 // Check ...

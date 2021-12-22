@@ -43,7 +43,6 @@ func TestVar(t *testing.T) {
 				Name: "len",
 				Val:  42,
 				Type: Short,
-				file: &File{},
 			},
 			"alt": {
 				Name: "alt",

@@ -232,7 +232,7 @@ func readDimensions(fd io.ReadSeeker) ([]types.Dimension, error) {
 		return nil, fmt.Errorf("Expected DimensionTag, got %s", t.String())
 	}
 	lst, err := readListOf(fd, func() (d types.Dimension, err error) {
-		d = types.NewDimension(nil)
+		d = types.NewDimension()
 
 		if d.Name, err = readString(fd); err != nil {
 			return d, err
@@ -279,7 +279,7 @@ func readAttributes(fd io.ReadSeeker) (map[string]types.Attr, error) {
 	}
 
 	lst, err := readListOf(fd, func() (a types.Attr, err error) {
-		a = types.NewAttr(nil)
+		a = types.NewAttr()
 
 		if a.Name, err = readString(fd); err != nil {
 			return
@@ -319,7 +319,7 @@ func readVars(dims []types.Dimension, fd io.ReadSeeker) (map[string]types.Var, e
 	}
 
 	lst, err := readListOf(fd, func() (v types.Var, err error) {
-		v = types.NewVar(nil)
+		v = types.NewVar()
 
 		if v.Name, err = readString(fd); err != nil {
 			return v, err

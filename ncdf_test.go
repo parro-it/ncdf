@@ -78,7 +78,6 @@ func TestCheck(t *testing.T) {
 		require.NotNil(t, f)
 		//f.Close()
 		assert.NoError(t, err)
-		f.Unlink()
 		assert.Equal(t, []types.Dimension{
 			{Name: "Time", Len: 0},
 			{Name: "DateStrLen", Len: 19},
