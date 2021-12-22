@@ -365,13 +365,14 @@ func readVars(dims []types.Dimension, fd io.ReadSeeker) (map[string]types.Var, e
 }
 
 func readAttrValue[T types.BaseType](fd io.ReadSeeker) ([]T, error) {
-	var val T
-	var res []T
 	nelems, err := readVal[int32](fd)
 	if err != nil {
 		var empty []T
 		return empty, err
 	}
+
+	var res []T
+	var val T
 
 	for i := int32(0); i < nelems; i++ {
 		val, err = readVal[T](fd)
