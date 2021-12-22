@@ -92,7 +92,6 @@ func TestCheck(t *testing.T) {
 		f, err := Open("fixtures/exampl2.nc")
 		require.NotNil(t, f)
 		assert.NoError(t, err)
-		f.Unlink()
 		time := f.Vars["Times"]
 		assert.Equal(t, "Time", time.Dimensions[0].Name)
 		time.Dimensions = make([]*types.Dimension, 0)
@@ -112,7 +111,6 @@ func TestCheck(t *testing.T) {
 		f, err := Open("fixtures/exampl2.nc")
 		require.NotNil(t, f)
 		assert.NoError(t, err)
-		f.Unlink()
 		assert.Equal(t, types.Attr{
 			Name: "TITLE",
 			Val:  " OUTPUT FROM WRF V3.8.1 MODEL",

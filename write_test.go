@@ -102,7 +102,6 @@ func TestWriteHeader(t *testing.T) {
 	require.NoError(t, fout.Close())
 
 	f2, err := Open(fout.Name())
-	f2.Unlink()
 	//f2.Count = 0
 	require.NoError(t, err)
 	assert.Equal(t, &f, f2)
