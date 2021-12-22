@@ -192,7 +192,7 @@ func ReadHeader(fd io.ReadSeeker) (*types.File, error) {
 	f := &types.File{}
 	var err error
 
-	if f.Version, err = readVal[[4]byte](fd); err != nil {
+	if f.Version, err = readSingleValue[[4]byte](fd); err != nil {
 		return nil, err
 	}
 
@@ -200,7 +200,7 @@ func ReadHeader(fd io.ReadSeeker) (*types.File, error) {
 		return nil, err
 	}
 
-	if f.NumRecs, err = readVal[int32](fd); err != nil {
+	if f.NumRecs, err = readSingleValue[int32](fd); err != nil {
 		return nil, err
 	}
 
@@ -231,14 +231,14 @@ func readDimensions(fd io.ReadSeeker) ([]types.Dimension, error) {
 	if t != types.DimensionTag {
 		return nil, fmt.Errorf("Expected DimensionTag, got %s", t.String())
 	}
-	lst, err := readListOf(fd, func() (d types.Dimension, err error) {
+	lst, err := readListOfObjects(fd, func() (d types.Dimension, err error) {
 		d = types.NewDimension()
 
 		if d.Name, err = readString(fd); err != nil {
 			return d, err
 		}
 
-		if d.Len, err = readVal[int32](fd); err != nil {
+		if d.Len, err = readSingleValue[int32](fd); err != nil {
 			return d, err
 		}
 
@@ -278,18 +278,18 @@ func readAttributes(fd io.ReadSeeker) (map[string]types.Attr, error) {
 		return nil, fmt.Errorf("Expected AttributeTag, got %s", t.String())
 	}
 
-	lst, err := readListOf(fd, func() (a types.Attr, err error) {
+	lst, err := readListOfObjects(fd, func() (a types.Attr, err error) {
 		a = types.NewAttr()
 
 		if a.Name, err = readString(fd); err != nil {
 			return
 		}
 
-		if a.Type, err = readVal[types.Type](fd); err != nil {
+		if a.Type, err = readSingleValue[types.Type](fd); err != nil {
 			return
 		}
 
-		if a.Val, err = readValue(a, fd); err != nil {
+		if a.Val, err = readAttributeValue(a, fd); err != nil {
 			return
 		}
 
@@ -318,15 +318,15 @@ func readVars(dims []types.Dimension, fd io.ReadSeeker) (map[string]types.Var, e
 		return nil, fmt.Errorf("Expected VariableTag, got %s", t.String())
 	}
 
-	lst, err := readListOf(fd, func() (v types.Var, err error) {
+	lst, err := readListOfObjects(fd, func() (v types.Var, err error) {
 		v = types.NewVar()
 
 		if v.Name, err = readString(fd); err != nil {
 			return v, err
 		}
 
-		v.Dimensions, err = readListOf(fd, func() (*types.Dimension, error) {
-			id, err := readVal[int32](fd)
+		v.Dimensions, err = readListOfObjects(fd, func() (*types.Dimension, error) {
+			id, err := readSingleValue[int32](fd)
 			if err != nil {
 				return nil, err
 			}
@@ -340,15 +340,15 @@ func readVars(dims []types.Dimension, fd io.ReadSeeker) (map[string]types.Var, e
 		if v.Attrs, err = readAttributes(fd); err != nil {
 			return v, err
 		}
-		if v.Type, err = readVal[types.Type](fd); err != nil {
+		if v.Type, err = readSingleValue[types.Type](fd); err != nil {
 			return v, err
 		}
 
-		if v.Size, err = readVal[int32](fd); err != nil {
+		if v.Size, err = readSingleValue[int32](fd); err != nil {
 			return v, err
 		}
 
-		if v.Offset, err = readVal[uint64](fd); err != nil {
+		if v.Offset, err = readSingleValue[uint64](fd); err != nil {
 			return v, err
 		}
 		return
@@ -364,8 +364,8 @@ func readVars(dims []types.Dimension, fd io.ReadSeeker) (map[string]types.Var, e
 	return res, nil
 }
 
-func readAttrValue[T types.BaseType](fd io.ReadSeeker) ([]T, error) {
-	nelems, err := readVal[int32](fd)
+func readListOfValues[T types.BaseType](fd io.ReadSeeker) ([]T, error) {
+	nelems, err := readSingleValue[int32](fd)
 	if err != nil {
 		var empty []T
 		return empty, err
@@ -375,7 +375,7 @@ func readAttrValue[T types.BaseType](fd io.ReadSeeker) ([]T, error) {
 	var val T
 
 	for i := int32(0); i < nelems; i++ {
-		val, err = readVal[T](fd)
+		val, err = readSingleValue[T](fd)
 		if err != nil {
 			var empty []T
 			return empty, err
@@ -399,26 +399,27 @@ func readAttrValue[T types.BaseType](fd io.ReadSeeker) ([]T, error) {
 	return res, nil
 }
 
-func readValue(a types.Attr, fd io.ReadSeeker) (interface{}, error) {
+// TODO: add support for multiple values
+func readAttributeValue(a types.Attr, fd io.ReadSeeker) (interface{}, error) {
 	t := a.Type
 	if t == types.Double {
-		return readAttrValue[float64](fd)
+		return readListOfValues[float64](fd)
 	}
 
 	if t == types.Short {
-		return readAttrValue[int16](fd)
+		return readListOfValues[int16](fd)
 	}
 
 	if t == types.Int {
-		return readAttrValue[int32](fd)
+		return readListOfValues[int32](fd)
 	}
 
 	if t == types.Byte {
-		return readAttrValue[byte](fd)
+		return readListOfValues[byte](fd)
 	}
 
 	if t == types.Float {
-		return readAttrValue[float32](fd)
+		return readListOfValues[float32](fd)
 	}
 
 	if t == types.Char {
@@ -428,8 +429,8 @@ func readValue(a types.Attr, fd io.ReadSeeker) (interface{}, error) {
 	return nil, fmt.Errorf("Unsupported type <%s>", t)
 }
 
-func readListOf[T any](fd io.ReadSeeker, fn func() (T, error)) (list []T, err error) {
-	len, err := readVal[int32](fd)
+func readListOfObjects[T any](fd io.ReadSeeker, fn func() (T, error)) (list []T, err error) {
+	len, err := readSingleValue[int32](fd)
 	if err != nil {
 		return nil, err
 	}
@@ -447,14 +448,14 @@ func readListOf[T any](fd io.ReadSeeker, fn func() (T, error)) (list []T, err er
 }
 
 func readString(fd io.ReadSeeker) (string, error) {
-	v, err := readAttrValue[byte](fd)
+	v, err := readListOfValues[byte](fd)
 	if err != nil {
 		return "", err
 	}
 	return string(v), nil
 }
 
-func readVal[T any](fd io.ReadSeeker) (T, error) {
+func readSingleValue[T any](fd io.ReadSeeker) (T, error) {
 	var val T
 	if err := binary.Read(fd, binary.BigEndian, &val); err != nil {
 		var empty T
