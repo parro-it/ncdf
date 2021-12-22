@@ -1,6 +1,7 @@
 package ncdf
 
 import (
+	"os"
 	"testing"
 
 	"github.com/parro-it/ncdf/types"
@@ -12,14 +13,14 @@ func TestOpen(t *testing.T) {
 	f, err := Open("fixtures/exampl2.nc")
 	require.NoError(t, err)
 	assert.NotNil(t, f)
-	f.Close()
+	//f.Close()
 }
 
 func TestVarData(t *testing.T) {
 	f, err := Open("fixtures/exampl2.nc")
 	require.NoError(t, err)
 	require.NotNil(t, f)
-	defer f.Close()
+	//defer f.Close()
 
 	t2 := f.Vars["T2"]
 	dim := 1
@@ -30,7 +31,11 @@ func TestVarData(t *testing.T) {
 		dim *= int(d.Len)
 	}
 
-	values, err := VarData[float32](t2, f)
+	fd, err := os.Open("fixtures/exampl2.nc")
+	require.NoError(t, err)
+	defer fd.Close()
+
+	values, err := VarData[float32](t2, fd)
 	require.NoError(t, err)
 	require.Equal(t, dim*4, len(values))
 
@@ -64,14 +69,14 @@ func TestCheck(t *testing.T) {
 		assert.NoError(t, err)
 		require.NotNil(t, f)
 		assert.Equal(t, int32(1), f.NumRecs)
-		f.Close()
+		//f.Close()
 
 	})
 
 	t.Run("Dimensions", func(t *testing.T) {
 		f, err := Open("fixtures/exampl2.nc")
 		require.NotNil(t, f)
-		f.Close()
+		//f.Close()
 		assert.NoError(t, err)
 		f.Unlink()
 		assert.Equal(t, []types.Dimension{
@@ -87,7 +92,6 @@ func TestCheck(t *testing.T) {
 	t.Run("Variables", func(t *testing.T) {
 		f, err := Open("fixtures/exampl2.nc")
 		require.NotNil(t, f)
-		f.Close()
 		assert.NoError(t, err)
 		f.Unlink()
 		time := f.Vars["Times"]
@@ -108,7 +112,6 @@ func TestCheck(t *testing.T) {
 	t.Run("Global attributes", func(t *testing.T) {
 		f, err := Open("fixtures/exampl2.nc")
 		require.NotNil(t, f)
-		f.Close()
 		assert.NoError(t, err)
 		f.Unlink()
 		assert.Equal(t, types.Attr{

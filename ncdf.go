@@ -188,10 +188,10 @@ func writeDimension(d types.Dimension, w io.Writer) error {
 	return nil
 }
 
-func readHeader(f *types.File) error {
+func readHeader(f *types.File, fd io.ReadSeeker) error {
 	var err error
 
-	if f.Version, err = readVal[[4]byte](f); err != nil {
+	if f.Version, err = readVal[[4]byte](f, fd); err != nil {
 		return err
 	}
 
@@ -199,45 +199,45 @@ func readHeader(f *types.File) error {
 		return err
 	}
 
-	if f.NumRecs, err = readVal[int32](f); err != nil {
+	if f.NumRecs, err = readVal[int32](f, fd); err != nil {
 		return err
 	}
 
-	if f.Dimensions, err = readDimensions(f); err != nil {
+	if f.Dimensions, err = readDimensions(f, fd); err != nil {
 		return err
 	}
 
-	if f.Attrs, err = readAttributes(f); err != nil {
+	if f.Attrs, err = readAttributes(f, fd); err != nil {
 		return err
 	}
 
-	if f.Vars, err = readVars(f); err != nil {
+	if f.Vars, err = readVars(f, fd); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func readDimensions(f *types.File) ([]types.Dimension, error) {
-	t, err := readTag(f)
+func readDimensions(f *types.File, fd io.ReadSeeker) ([]types.Dimension, error) {
+	t, err := readTag(f, fd)
 	if err != nil {
 		return nil, err
 	}
 	if t == types.ZeroTag {
-		_, err := sectionNotPresent[types.Dimension](f)
+		_, err := sectionNotPresent[types.Dimension](f, fd)
 		return nil, err
 	}
 	if t != types.DimensionTag {
 		return nil, fmt.Errorf("Expected DimensionTag, got %s", t.String())
 	}
-	lst, err := readListOf(f, func(f *types.File) (d types.Dimension, err error) {
+	lst, err := readListOf(f, fd, func(f *types.File) (d types.Dimension, err error) {
 		d = types.NewDimension(f)
 
-		if d.Name, err = readString(f); err != nil {
+		if d.Name, err = readString(f, fd); err != nil {
 			return d, err
 		}
 
-		if d.Len, err = readVal[int32](f); err != nil {
+		if d.Len, err = readVal[int32](f, fd); err != nil {
 			return d, err
 		}
 
@@ -250,8 +250,8 @@ func readDimensions(f *types.File) ([]types.Dimension, error) {
 	return lst, nil
 }
 
-func sectionNotPresent[T any](f *types.File) (map[string]T, error) {
-	t2, err := readTag(f)
+func sectionNotPresent[T any](f *types.File, fd io.ReadSeeker) (map[string]T, error) {
+	t2, err := readTag(f, fd)
 	if err != nil {
 		return nil, err
 	}
@@ -263,32 +263,32 @@ func sectionNotPresent[T any](f *types.File) (map[string]T, error) {
 	return map[string]T{}, nil
 }
 
-func readAttributes(f *types.File) (map[string]types.Attr, error) {
-	t, err := readTag(f)
+func readAttributes(f *types.File, fd io.ReadSeeker) (map[string]types.Attr, error) {
+	t, err := readTag(f, fd)
 	if err != nil {
 		return nil, err
 	}
 
 	if t == types.ZeroTag {
-		return sectionNotPresent[types.Attr](f)
+		return sectionNotPresent[types.Attr](f, fd)
 	}
 
 	if t != types.AttributeTag {
 		return nil, fmt.Errorf("Expected AttributeTag, got %s", t.String())
 	}
 
-	lst, err := readListOf(f, func(f *types.File) (a types.Attr, err error) {
+	lst, err := readListOf(f, fd, func(f *types.File) (a types.Attr, err error) {
 		a = types.NewAttr(f)
 
-		if a.Name, err = readString(f); err != nil {
+		if a.Name, err = readString(f, fd); err != nil {
 			return
 		}
 
-		if a.Type, err = readVal[types.Type](f); err != nil {
+		if a.Type, err = readVal[types.Type](f, fd); err != nil {
 			return
 		}
 
-		if a.Val, err = readValue(a, f); err != nil {
+		if a.Val, err = readValue(a, f, fd); err != nil {
 			return
 		}
 
@@ -304,28 +304,28 @@ func readAttributes(f *types.File) (map[string]types.Attr, error) {
 	return res, nil
 }
 
-func readVars(f *types.File) (map[string]types.Var, error) {
-	t, err := readTag(f)
+func readVars(f *types.File, fd io.ReadSeeker) (map[string]types.Var, error) {
+	t, err := readTag(f, fd)
 	if err != nil {
 		return nil, err
 	}
 	if t == types.ZeroTag {
-		return sectionNotPresent[types.Var](f)
+		return sectionNotPresent[types.Var](f, fd)
 	}
 
 	if t != types.VariableTag {
 		return nil, fmt.Errorf("Expected VariableTag, got %s", t.String())
 	}
 
-	lst, err := readListOf(f, func(f *types.File) (v types.Var, err error) {
+	lst, err := readListOf(f, fd, func(f *types.File) (v types.Var, err error) {
 		v = types.NewVar(f)
 
-		if v.Name, err = readString(f); err != nil {
+		if v.Name, err = readString(f, fd); err != nil {
 			return v, err
 		}
 
-		v.Dimensions, err = readListOf(f, func(f *types.File) (*types.Dimension, error) {
-			id, err := readVal[int32](f)
+		v.Dimensions, err = readListOf(f, fd, func(f *types.File) (*types.Dimension, error) {
+			id, err := readVal[int32](f, fd)
 			if err != nil {
 				return nil, err
 			}
@@ -336,18 +336,18 @@ func readVars(f *types.File) (map[string]types.Var, error) {
 			return v, err
 		}
 
-		if v.Attrs, err = readAttributes(f); err != nil {
+		if v.Attrs, err = readAttributes(f, fd); err != nil {
 			return v, err
 		}
-		if v.Type, err = readVal[types.Type](f); err != nil {
-			return v, err
-		}
-
-		if v.Size, err = readVal[int32](f); err != nil {
+		if v.Type, err = readVal[types.Type](f, fd); err != nil {
 			return v, err
 		}
 
-		if v.Offset, err = readVal[uint64](f); err != nil {
+		if v.Size, err = readVal[int32](f, fd); err != nil {
+			return v, err
+		}
+
+		if v.Offset, err = readVal[uint64](f, fd); err != nil {
 			return v, err
 		}
 		return
@@ -363,17 +363,17 @@ func readVars(f *types.File) (map[string]types.Var, error) {
 	return res, nil
 }
 
-func readAttrValue[T types.BaseType](f *types.File) ([]T, error) {
+func readAttrValue[T types.BaseType](f *types.File, fd io.ReadSeeker) ([]T, error) {
 	var val T
 	var res []T
-	nelems, err := readVal[int32](f)
+	nelems, err := readVal[int32](f, fd)
 	if err != nil {
 		var empty []T
 		return empty, err
 	}
 
 	for i := int32(0); i < nelems; i++ {
-		val, err = readVal[T](f)
+		val, err = readVal[T](f, fd)
 		if err != nil {
 			var empty []T
 			return empty, err
@@ -387,7 +387,7 @@ func readAttrValue[T types.BaseType](f *types.File) ([]T, error) {
 	}
 
 	f.Count += restCount
-	err = f.SeekTo(int64(f.Count))
+	_, err = fd.Seek(int64(f.Count), io.SeekStart)
 	if err != nil {
 		f.Count -= restCount
 		var empty []T
@@ -397,37 +397,37 @@ func readAttrValue[T types.BaseType](f *types.File) ([]T, error) {
 	return res, nil
 }
 
-func readValue(a types.Attr, f *types.File) (interface{}, error) {
+func readValue(a types.Attr, f *types.File, fd io.ReadSeeker) (interface{}, error) {
 	t := a.Type
 	if t == types.Double {
-		return readAttrValue[float64](f)
+		return readAttrValue[float64](f, fd)
 	}
 
 	if t == types.Short {
-		return readAttrValue[int16](f)
+		return readAttrValue[int16](f, fd)
 	}
 
 	if t == types.Int {
-		return readAttrValue[int32](f)
+		return readAttrValue[int32](f, fd)
 	}
 
 	if t == types.Byte {
-		return readAttrValue[byte](f)
+		return readAttrValue[byte](f, fd)
 	}
 
 	if t == types.Float {
-		return readAttrValue[float32](f)
+		return readAttrValue[float32](f, fd)
 	}
 
 	if t == types.Char {
-		return readString(f)
+		return readString(f, fd)
 	}
 
 	return nil, fmt.Errorf("Unsupported type <%s>", t)
 }
 
-func readListOf[T any](f *types.File, fn func(f *types.File) (T, error)) (list []T, err error) {
-	len, err := readVal[int32](f)
+func readListOf[T any](f *types.File, fd io.ReadSeeker, fn func(f *types.File) (T, error)) (list []T, err error) {
+	len, err := readVal[int32](f, fd)
 	if err != nil {
 		return nil, err
 	}
@@ -444,17 +444,17 @@ func readListOf[T any](f *types.File, fn func(f *types.File) (T, error)) (list [
 	return list, nil
 }
 
-func readString(f *types.File) (string, error) {
-	v, err := readAttrValue[byte](f)
+func readString(f *types.File, fd io.ReadSeeker) (string, error) {
+	v, err := readAttrValue[byte](f, fd)
 	if err != nil {
 		return "", err
 	}
 	return string(v), nil
 }
 
-func readVal[T any](f *types.File) (T, error) {
+func readVal[T any](f *types.File, fd io.ReadSeeker) (T, error) {
 	var val T
-	if err := f.Read(&val); err != nil {
+	if err := binary.Read(fd, binary.BigEndian, &val); err != nil {
 		var empty T
 		return empty, err
 	}
@@ -462,14 +462,13 @@ func readVal[T any](f *types.File) (T, error) {
 	return val, nil
 }
 
-func readTag(f *types.File) (types.Tag, error) {
-
-	buf, err := f.ReadBytes(4)
-	if err != nil {
+func readTag(f *types.File, fd io.ReadSeeker) (types.Tag, error) {
+	var buf [4]byte
+	if err := binary.Read(fd, binary.BigEndian, &buf); err != nil {
 		return types.ZeroTag, err
 	}
 	f.Count += 4
-	return types.Tag(buf[3]), err
+	return types.Tag(buf[3]), nil
 }
 
 // Open ...
@@ -479,8 +478,9 @@ func Open(file string) (*types.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	f := types.NewFile(fd)
-	if err := readHeader(f); err != nil {
+	defer fd.Close()
+	f := types.NewFile()
+	if err := readHeader(f, fd); err != nil {
 		return nil, err
 	}
 
@@ -488,12 +488,12 @@ func Open(file string) (*types.File, error) {
 }
 
 // VarData ...
-func VarData[T types.BaseType](v types.Var, f *types.File) ([]T, error) {
-	if err := f.SeekTo(int64(v.Offset)); err != nil {
+func VarData[T types.BaseType](v types.Var, fd io.ReadSeeker) ([]T, error) {
+	if _, err := fd.Seek(int64(v.Offset), io.SeekStart); err != nil {
 		return nil, err
 	}
 	data := make([]T, v.Size)
-	if err := f.Read(data); err != nil {
+	if err := binary.Read(fd, binary.BigEndian, &data); err != nil {
 		return nil, err
 	}
 	return data, nil

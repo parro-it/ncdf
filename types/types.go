@@ -1,9 +1,7 @@
 package types
 
 import (
-	"encoding/binary"
 	"fmt"
-	"io"
 )
 
 // Version contains magic number for netcdf
@@ -15,7 +13,7 @@ type Version [4]byte
 // It has an os.File field containing
 // the fd of file being read.
 type File struct {
-	fd      io.ReadSeekCloser
+	//fd      io.ReadSeekCloser
 	Count   uint64
 	Version Version
 	NumRecs int32
@@ -162,6 +160,7 @@ const (
 	Double Type = 6
 )
 
+/*
 func (f *File) Read(data interface{}) error {
 	return binary.Read(f.fd, binary.BigEndian, data)
 }
@@ -182,9 +181,9 @@ func (f *File) ReadBytes(n int) ([]byte, error) {
 	return buf, nil
 }
 
+*/
 // Unlink ...
 func (f *File) Unlink() {
-	f.fd = nil
 	for i, d := range f.Dimensions {
 		d.file = nil
 		f.Dimensions[i] = d
@@ -207,8 +206,8 @@ func (f *File) Unlink() {
 }
 
 // NewFile ...
-func NewFile(fd io.ReadSeekCloser) *File {
-	return &File{fd: fd}
+func NewFile() *File {
+	return &File{}
 }
 
 // NewAttr ...
@@ -239,11 +238,12 @@ func (v Version) Check() error {
 	return nil
 }
 
+/*
 // Close ...
 func (f *File) Close() error {
 	return f.fd.Close()
 }
-
+*/
 // MarshalJSON ...
 func (t Type) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, t.String())), nil

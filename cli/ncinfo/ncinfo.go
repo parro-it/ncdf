@@ -11,7 +11,7 @@ func main() {
 	if err != nil {
 		panic(nil)
 	}
-	defer f.Close()
+	//defer f.Close()
 	/*buf, err := json.MarshalIndent(f, "  ", "  ")
 	if err != nil {
 		panic(nil)
