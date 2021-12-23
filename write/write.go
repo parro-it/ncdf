@@ -10,7 +10,7 @@ import (
 func WriteHeader(f *types.File, w io.Writer) error {
 	// magic + version
 	bytes := []byte{'C', 'D', 'F', 2}
-	if err := binary.Write(w, binary.BigEndian, bytes); err != nil {
+	if _, err := w.Write(bytes); err != nil {
 		return err
 	}
 
@@ -60,9 +60,8 @@ func WriteHeader(f *types.File, w io.Writer) error {
 }
 
 func writeTag(tag types.Tag, w io.Writer) error {
-	var buf [4]byte
-	buf[3] = byte(tag)
-	if err := binary.Write(w, binary.BigEndian, buf); err != nil {
+	buf := []byte{0, 0, 0, byte(tag)}
+	if _, err := w.Write(buf); err != nil {
 		return err
 	}
 	return nil
@@ -96,7 +95,7 @@ func writeAttr(a types.Attr, w io.Writer) error {
 	rest := 4 - (len(a.Name) % 4)
 	if rest != 4 {
 		buf := make([]byte, rest)
-		if err := binary.Write(w, binary.BigEndian, buf); err != nil {
+		if _, err := w.Write(buf); err != nil {
 			return err
 		}
 	}
@@ -125,13 +124,13 @@ func writeVar(f *types.File, v types.Var, w io.Writer) error {
 	if err := binary.Write(w, binary.BigEndian, int32(len(v.Name))); err != nil {
 		return err
 	}
-	if err := binary.Write(w, binary.BigEndian, []byte(v.Name)); err != nil {
+	if _, err := w.Write([]byte(v.Name)); err != nil {
 		return err
 	}
 	rest := 4 - (len(v.Name) % 4)
 	if rest != 4 {
 		buf := make([]byte, rest)
-		if err := binary.Write(w, binary.BigEndian, buf); err != nil {
+		if _, err := w.Write(buf); err != nil {
 			return err
 		}
 	}

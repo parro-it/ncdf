@@ -23,21 +23,21 @@ type File struct {
 	Vars       map[string]Var
 }
 
-func (f File) Size() int32 {
+func (f File) ByteSize() int32 {
 	var szAttrs int
-	szAttrs += 4 // len
+	szAttrs += 8 // len+tag
 	for _, it := range f.Attrs {
-		szAttrs += int(it.Size())
+		szAttrs += int(it.ByteSize())
 	}
 
-	szAttrs += 4 // len
+	szAttrs += 8 // len+tag
 	for _, it := range f.Dimensions {
-		szAttrs += int(it.Size())
+		szAttrs += int(it.ByteSize())
 	}
 
-	szAttrs += 4 // len
+	szAttrs += 8 // len+tag
 	for _, it := range f.Vars {
-		szAttrs += int(it.CmpSize())
+		szAttrs += int(it.ByteSize())
 	}
 
 	return int32(
@@ -73,19 +73,19 @@ type Var struct {
 	//file       *File
 }
 
-func (v Var) CmpSize() int32 {
-	var szAttrs int
+func (v Var) ByteSize() int32 {
+	var szAttrs int32
+	szAttrs += 4 + 4 // len+attr tag
 	for _, a := range v.Attrs {
-		szAttrs += int(a.Size())
+		szAttrs += a.ByteSize()
 	}
 
-	return int32(
-		4 + len(v.Dimensions)*4 + // Dimensions
-			4 + szAttrs +
-			4 + len(v.Name) + // Name string
-			4 + //Size
-			8 + // Offset
-			4) // Type
+	return 4 + int32(len(v.Dimensions))*4 + // Dimensions
+		szAttrs +
+		stringByteSize(v.Name) + // Name string
+		4 + //Size
+		8 + // Offset
+		4 // Type
 
 }
 
@@ -104,8 +104,8 @@ type Attr struct {
 
 // TODO: add support for array values
 // TODO: add padding for 32bit alignment
-func (a Attr) Size() int32 {
-	var sz int
+func (a Attr) ByteSize() int32 {
+	var sz int32
 	switch a.Type {
 	case Double:
 		sz = 8
@@ -120,12 +120,15 @@ func (a Attr) Size() int32 {
 	case Char:
 		sz = 1
 	}
+	// pad value
+	if sz < 4 {
+		sz = 4
+	}
 
-	return int32(
-		4 + len(a.Name) + // Name string
-			4 + // Type
-			4 + // Len
-			sz)
+	return stringByteSize(a.Name) + // Name string
+		4 + // Type
+		4 + // len
+		sz
 }
 
 // Dimension ...
@@ -135,10 +138,18 @@ type Dimension struct {
 	//file *File
 }
 
-func (d Dimension) Size() int32 {
-	return int32(
-		4 + len(d.Name) + // Name string
-			4) // Len
+func stringByteSize(val string) int32 {
+	len := len(val)
+	rest := 4 - (len % 4)
+	if rest != 4 {
+		len += rest
+	}
+	return int32(4 + len)
+}
+
+func (d Dimension) ByteSize() int32 {
+	return stringByteSize(d.Name) + // Name string
+		4 // Len
 
 }
 

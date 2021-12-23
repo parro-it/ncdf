@@ -98,10 +98,14 @@ func (bc BufCloser) Seek(offset int64, whence int) (int64, error) {
 func TestWriteHeader(t *testing.T) {
 	fout, err := os.Create("/tmp/prova.nc")
 	require.NoError(t, err)
-	defer fout.Close()
 	err = WriteHeader(&f, fout)
 	require.NoError(t, err)
 	require.NoError(t, fout.Close())
+
+	expectedSize := int64(f.ByteSize())
+	st, err := os.Stat("/tmp/prova.nc")
+	require.NoError(t, err)
+	assert.Equal(t, expectedSize, st.Size())
 
 	f2, err := read.Open(fout.Name())
 	//f2.Count = 0

@@ -21,7 +21,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%x\n", f.Size())
+	fmt.Printf("%x\n", f.ByteSize())
 
 	out, err := os.OpenFile("/mnt/repos/parro-it/ncdf/simple2.nc", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(0644))
 	if err != nil {

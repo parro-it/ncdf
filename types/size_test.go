@@ -50,23 +50,23 @@ var f = File{
 }
 
 func TestFileSize(t *testing.T) {
-	var expected = 12 + 12 + 4 + //dims
-		18 + 18 + 4 + //attrs
-		80 + 80 + 4 + //vars
+	var expected = 12 + 12 + 4 + 4 + //dims
+		20 + 20 + 4 + 4 + //attrs
+		88 + 88 + 4 + 4 + //vars
 		4 + 4 // magic + recs
-	assert.Equal(t, int32(expected), f.Size())
+	assert.Equal(t, int32(expected), f.ByteSize())
 }
 
 func TestDimSize(t *testing.T) {
-	assert.Equal(t, int32(12), d.Size())
+	assert.Equal(t, int32(12), d.ByteSize())
 }
 
 func TestAttrSize(t *testing.T) {
 
-	assert.Equal(t, int32(18), a.Size())
+	assert.Equal(t, int32(20), a.ByteSize())
 }
 
 func TestVarSize(t *testing.T) {
 
-	assert.Equal(t, int32(80), v.CmpSize())
+	assert.Equal(t, int32(88), v.ByteSize())
 }
