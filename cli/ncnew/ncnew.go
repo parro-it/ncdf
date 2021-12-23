@@ -33,7 +33,7 @@ func main() {
 	if err := write.Header(f, out); err != nil {
 		panic(err)
 	}
-	for _, v := range f.Vars {
+	for _, v := range f.Vars.Values() {
 		write.VarData(v, make([]float32, 100), out)
 	}
 

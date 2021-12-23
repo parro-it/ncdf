@@ -7,6 +7,7 @@ import (
 	"os"
 	"unsafe"
 
+	"github.com/parro-it/ncdf/ordmap"
 	"github.com/parro-it/ncdf/types"
 )
 
@@ -73,23 +74,26 @@ func readDimensions(fd io.ReadSeeker) ([]types.Dimension, error) {
 	return lst, nil
 }
 
-func sectionNotPresent[T any](fd io.ReadSeeker) (map[string]T, error) {
+func sectionNotPresent[T any](fd io.ReadSeeker) (ordmap.OrderedMap[T, string], error) {
+	var res ordmap.OrderedMap[T, string]
 	t2, err := readTag(fd)
 	if err != nil {
-		return nil, err
+		return res, err
 	}
 
 	if t2 != types.ZeroTag {
-		return nil, fmt.Errorf("Expected ZeroTag, got %s", t2.String())
+		return res, fmt.Errorf("Expected ZeroTag, got %s", t2.String())
 	}
 
-	return map[string]T{}, nil
+	return res, nil
 }
 
-func readAttributes(fd io.ReadSeeker) (map[string]types.Attr, error) {
+func readAttributes(fd io.ReadSeeker) (ordmap.OrderedMap[types.Attr, string], error) {
+	var res ordmap.OrderedMap[types.Attr, string]
+
 	t, err := readTag(fd)
 	if err != nil {
-		return nil, err
+		return res, err
 	}
 
 	if t == types.ZeroTag {
@@ -97,7 +101,7 @@ func readAttributes(fd io.ReadSeeker) (map[string]types.Attr, error) {
 	}
 
 	if t != types.AttributeTag {
-		return nil, fmt.Errorf("Expected AttributeTag, got %s", t.String())
+		return res, fmt.Errorf("Expected AttributeTag, got %s", t.String())
 	}
 
 	lst, err := readListOfObjects(fd, func() (a types.Attr, err error) {
@@ -118,26 +122,26 @@ func readAttributes(fd io.ReadSeeker) (map[string]types.Attr, error) {
 		return
 	})
 	if err != nil {
-		return nil, err
+		return res, err
 	}
-	res := map[string]types.Attr{}
 	for _, d := range lst {
-		res[d.Name] = d
+		res.Set(d.Name, d)
 	}
 	return res, nil
 }
 
-func readVars(dims []types.Dimension, fd io.ReadSeeker) (map[string]types.Var, error) {
+func readVars(dims []types.Dimension, fd io.ReadSeeker) (ordmap.OrderedMap[types.Var, string], error) {
+	var res ordmap.OrderedMap[types.Var, string]
 	t, err := readTag(fd)
 	if err != nil {
-		return nil, err
+		return res, err
 	}
 	if t == types.ZeroTag {
 		return sectionNotPresent[types.Var](fd)
 	}
 
 	if t != types.VariableTag {
-		return nil, fmt.Errorf("Expected VariableTag, got %s", t.String())
+		return res, fmt.Errorf("Expected VariableTag, got %s", t.String())
 	}
 
 	lst, err := readListOfObjects(fd, func() (v types.Var, err error) {
@@ -177,11 +181,10 @@ func readVars(dims []types.Dimension, fd io.ReadSeeker) (map[string]types.Var, e
 	})
 
 	if err != nil {
-		return nil, err
+		return res, err
 	}
-	res := map[string]types.Var{}
 	for _, d := range lst {
-		res[d.Name] = d
+		res.Set(d.Name, d)
 	}
 	return res, nil
 }

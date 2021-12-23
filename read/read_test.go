@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/parro-it/ncdf/ordmap"
 	"github.com/parro-it/ncdf/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,7 +23,7 @@ func TestVarData(t *testing.T) {
 	require.NotNil(t, f)
 	//defer f.Close()
 
-	t2 := f.Vars["T2"]
+	t2 := f.Vars.Get("T2")
 	dim := 1
 	for _, d := range t2.Dimensions {
 		if d.Len == 0 {
@@ -92,13 +93,13 @@ func TestCheck(t *testing.T) {
 		f, err := HeaderFromDisk("../fixtures/exampl2.nc")
 		require.NotNil(t, f)
 		assert.NoError(t, err)
-		time := f.Vars["Times"]
+		time := f.Vars.Get("Times")
 		assert.Equal(t, "Time", time.Dimensions[0].Name)
 		time.Dimensions = make([]*types.Dimension, 0)
 
 		assert.Equal(t, types.Var{
 			Dimensions: []*types.Dimension{},
-			Attrs:      map[string]types.Attr{},
+			Attrs:      ordmap.OrderedMap[types.Attr, string]{},
 			Name:       "Times",
 			Type:       2,
 			Size:       20,
@@ -115,7 +116,7 @@ func TestCheck(t *testing.T) {
 			Name: "TITLE",
 			Val:  " OUTPUT FROM WRF V3.8.1 MODEL",
 			Type: types.Char,
-		}, f.Attrs["TITLE"])
+		}, f.Attrs.Get("TITLE"))
 
 	})
 

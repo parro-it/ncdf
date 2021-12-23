@@ -3,6 +3,7 @@ package types
 import (
 	"testing"
 
+	"github.com/parro-it/ncdf/ordmap"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,18 +18,18 @@ var a = Attr{
 }
 var v = Var{
 	Name: "test",
-	Attrs: map[string]Attr{
-		"tst1": {
+	Attrs: ordmap.From([]ordmap.Item[Attr, string]{
+		{Attr{
 			Name: "tst1",
 			Val:  int16(42),
 			Type: Short,
-		},
-		"tst2": {
+		}, "tst1"},
+		{Attr{
 			Name: "tst2",
 			Val:  int16(42),
 			Type: Short,
-		},
-	},
+		}, "tst2"},
+	}),
 	Dimensions: []*Dimension{nil, nil, nil},
 	Type:       Short,
 	Size:       42,
@@ -39,14 +40,14 @@ var f = File{
 	Version:    [4]byte{},
 	NumRecs:    0,
 	Dimensions: []Dimension{d, d},
-	Attrs: map[string]Attr{
-		"a1": a,
-		"a2": a,
-	},
-	Vars: map[string]Var{
-		"v1": v,
-		"v2": v,
-	},
+	Attrs: ordmap.From([]ordmap.Item[Attr, string]{
+		{a, "a1"},
+		{a, "a2"},
+	}),
+	Vars: ordmap.From([]ordmap.Item[Var, string]{
+		{v, "v1"},
+		{v, "v2"},
+	}),
 }
 
 func TestFileSize(t *testing.T) {

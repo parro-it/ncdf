@@ -2,6 +2,8 @@ package types
 
 import (
 	"fmt"
+
+	"github.com/parro-it/ncdf/ordmap"
 )
 
 // Version contains magic number for netcdf
@@ -19,30 +21,14 @@ type File struct {
 	NumRecs int32
 	//Dimensions    map[string]Dimension
 	Dimensions []Dimension
-	Attrs      map[string]Attr
-	Vars       map[string]Var
-}
-
-type OrderedMap[T any] struct {
-	seq []T
-	idx map[string]T
-}
-
-func (m *OrderedMap[T]) Let() int {
-	return 0
-}
-func (m *OrderedMap[T]) Set(key string, value T) {
-
-}
-func (m *OrderedMap[T]) Get(key string) T {
-	var empty T
-	return empty
+	Attrs      ordmap.OrderedMap[Attr, string]
+	Vars       ordmap.OrderedMap[Var, string]
 }
 
 func (f File) ByteSize() int32 {
 	var szAttrs int
 	szAttrs += 8 // len+tag
-	for _, it := range f.Attrs {
+	for _, it := range f.Attrs.Values() {
 		szAttrs += int(it.ByteSize())
 	}
 
@@ -52,7 +38,7 @@ func (f File) ByteSize() int32 {
 	}
 
 	szAttrs += 8 // len+tag
-	for _, it := range f.Vars {
+	for _, it := range f.Vars.Values() {
 		szAttrs += int(it.ByteSize())
 	}
 
@@ -81,7 +67,7 @@ const (
 // Var represents a netcdf variable
 type Var struct {
 	Dimensions []*Dimension
-	Attrs      map[string]Attr
+	Attrs      ordmap.OrderedMap[Attr, string]
 	Name       string
 	Type       Type
 	Size       int32
@@ -92,7 +78,7 @@ type Var struct {
 func (v Var) ByteSize() int32 {
 	var szAttrs int32
 	szAttrs += 4 + 4 // len+attr tag
-	for _, a := range v.Attrs {
+	for _, a := range v.Attrs.Values() {
 		szAttrs += a.ByteSize()
 	}
 

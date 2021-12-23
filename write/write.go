@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"io"
 
+	"github.com/parro-it/ncdf/ordmap"
 	"github.com/parro-it/ncdf/types"
 )
 
@@ -64,7 +65,7 @@ func Header(f *types.File, w io.Writer) error {
 	}
 
 	// vars
-	if f.Vars == nil || len(f.Vars) == 0 {
+	if f.Vars.Len() == 0 {
 		if err := writeTag(types.ZeroTag, w); err != nil {
 			return err
 		}
@@ -76,11 +77,11 @@ func Header(f *types.File, w io.Writer) error {
 			return err
 		}
 
-		if err := binary.Write(w, binary.BigEndian, int32(len(f.Vars))); err != nil {
+		if err := binary.Write(w, binary.BigEndian, int32(f.Vars.Len())); err != nil {
 			return err
 		}
 
-		for _, v := range f.Vars {
+		for _, v := range f.Vars.Values() {
 			if err := writeVar(f, v, w); err != nil {
 				return err
 			}
@@ -98,8 +99,8 @@ func writeTag(tag types.Tag, w io.Writer) error {
 	return nil
 }
 
-func writeAttrs(w io.Writer, attrs map[string]types.Attr) error {
-	if attrs == nil || len(attrs) == 0 {
+func writeAttrs(w io.Writer, attrs ordmap.OrderedMap[types.Attr, string]) error {
+	if attrs.Len() == 0 {
 		if err := writeTag(types.ZeroTag, w); err != nil {
 			return err
 		}
@@ -112,11 +113,11 @@ func writeAttrs(w io.Writer, attrs map[string]types.Attr) error {
 		return err
 	}
 
-	if err := binary.Write(w, binary.BigEndian, int32(len(attrs))); err != nil {
+	if err := binary.Write(w, binary.BigEndian, int32(attrs.Len())); err != nil {
 		return err
 	}
 
-	for _, a := range attrs {
+	for _, a := range attrs.Values() {
 		if err := writeAttr(a, w); err != nil {
 			return err
 		}

@@ -59,7 +59,6 @@ func (p *Parser) parseVariables(f *types.File) bool {
 	if p.consume() || p.last.Type != TkColon {
 		log.Panicf("`:` is required after a `variables` directive")
 	}
-	f.Vars = map[string]types.Var{}
 	dimensions := map[string]*types.Dimension{}
 	for _, d := range f.Dimensions {
 		dimensions[d.Name] = &d
@@ -124,7 +123,7 @@ func (p *Parser) parseVariables(f *types.File) bool {
 					panic("`;` expected")
 				}
 
-				f.Vars[v.Name] = v
+				f.Vars.Set(v.Name, v)
 				if p.consume() {
 					panic("`}` expected")
 				}

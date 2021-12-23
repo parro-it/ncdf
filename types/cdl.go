@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/parro-it/ncdf/ordmap"
 )
 
 // CDL ...
@@ -12,7 +14,7 @@ func (f *File) CDL() string {
 	res.WriteString("netcdf filename {\n")
 	res.WriteString(dimensionsCDL(f.Dimensions))
 	res.WriteString("variables\n")
-	for _, v := range f.Vars {
+	for _, v := range f.Vars.Values() {
 		res.WriteString("    ")
 		res.WriteString(v.CDL())
 	}
@@ -82,9 +84,9 @@ func (v *Var) CDL() string {
 	return res.String()
 }
 
-func attributesCDL(attrs map[string]Attr, prefix string) string {
+func attributesCDL(attrs ordmap.OrderedMap[Attr, string], prefix string) string {
 	var res strings.Builder
-	for _, a := range attrs {
+	for _, a := range attrs.Values() {
 		res.WriteString("        ")
 		res.WriteString(prefix + ":")
 		res.WriteString(a.CDL())

@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/parro-it/ncdf/ordmap"
 	"github.com/parro-it/ncdf/read"
 	"github.com/parro-it/ncdf/types"
 	"github.com/stretchr/testify/assert"
@@ -22,18 +23,18 @@ var a = types.Attr{
 }
 var v = types.Var{
 	Name: "test",
-	Attrs: map[string]types.Attr{
-		"tst1": {
+	Attrs: ordmap.From([]ordmap.Item[types.Attr, string]{
+		{types.Attr{
 			Name: "tst1",
 			Val:  []int16{42},
 			Type: types.Short,
-		},
-		"tst2": {
+		}, "tst1"},
+		{types.Attr{
 			Name: "tst2",
 			Val:  []int16{42},
 			Type: types.Short,
-		},
-	},
+		}, "tst2"},
+	}),
 	Dimensions: []*types.Dimension{&d, &d, &d},
 	Type:       types.Short,
 	Size:       42,
@@ -44,47 +45,46 @@ var f = types.File{
 	Version:    [4]byte{'C', 'D', 'F', 2},
 	NumRecs:    0,
 	Dimensions: []types.Dimension{d, d},
-	Attrs: map[string]types.Attr{
-		"a1": {
+	Attrs: ordmap.From([]ordmap.Item[types.Attr, string]{
+		{types.Attr{
 			Name: "a1",
 			Val:  []int16{42},
 			Type: types.Short,
-		},
-		"a2": {
+		}, "a1"},
+		{types.Attr{
 			Name: "a2",
 			Val:  []int16{42},
 			Type: types.Short,
-		},
-	},
-	Vars: map[string]types.Var{
-		"v1": {
+		}, "a2"},
+	}),
+	Vars: ordmap.From([]ordmap.Item[types.Var, string]{
+		{types.Var{
 			Name:       "v1",
-			Attrs:      map[string]types.Attr{},
 			Dimensions: []*types.Dimension{&d, &d, &d},
 			Type:       types.Short,
 			Size:       42,
 			Offset:     42,
-		},
-		"v2": {
+		}, "v1"},
+		{types.Var{
 			Name: "v2",
-			Attrs: map[string]types.Attr{
-				"a1": {
+			Attrs: ordmap.From([]ordmap.Item[types.Attr, string]{
+				{types.Attr{
 					Name: "a1",
 					Val:  []int16{42},
 					Type: types.Short,
-				},
-				"a2": {
+				}, "a1"},
+				{types.Attr{
 					Name: "a2",
 					Val:  []int16{42},
 					Type: types.Short,
-				},
-			},
+				}, "a2"},
+			}),
 			Dimensions: []*types.Dimension{&d, &d, &d},
 			Type:       types.Short,
 			Size:       42,
 			Offset:     42,
-		},
-	},
+		}, "v2"},
+	}),
 }
 
 type BufCloser struct {

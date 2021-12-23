@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/parro-it/ncdf/ordmap"
 	"github.com/parro-it/ncdf/types"
 	"github.com/stretchr/testify/require"
 )
@@ -35,14 +36,14 @@ func TestFailures(t *testing.T) {
 		Dimensions: []types.Dimension{
 			{Name: "a", Len: 10},
 		},
-		Vars: map[string]types.Var{
-			"pippo": {
+		Vars: ordmap.From([]ordmap.Item[types.Var, string]{{
+			types.Var{
 				Dimensions: []*types.Dimension{{Name: "a", Len: 10}},
 				Name:       "pippo",
 				Type:       types.Float,
 				Size:       40,
-			},
-		},
+			}, "pippo"},
+		}),
 	}, "")
 
 	assertParseTo(t, "netcdf fname {variables:float pippo (a)}", nil, "Parse failed: unknown dimension name `a`")
@@ -50,7 +51,7 @@ func TestFailures(t *testing.T) {
 	assertParseTo(t, "netcdf fname {variables:float pippo }", nil, "Parse failed: dimension list expected")
 	assertParseTo(t, "netcdf fname {variables:float }", nil, "Parse failed: variable name expected")
 	assertParseTo(t, "netcdf fname {variables:wrong}", nil, "Parse failed: variable type expected")
-	assertParseTo(t, "netcdf fname {variables:}", &types.File{Vars: map[string]types.Var{}}, "")
+	assertParseTo(t, "netcdf fname {variables:}", &types.File{Vars: ordmap.OrderedMap[types.Var, string]{}}, "")
 
 	assertParseTo(t, "netcdf fname {dimensions: a=10; b = 20;}", &types.File{Dimensions: []types.Dimension{
 		{Name: "a", Len: 10},
