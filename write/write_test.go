@@ -98,7 +98,7 @@ func (bc BufCloser) Seek(offset int64, whence int) (int64, error) {
 func TestWriteHeader(t *testing.T) {
 	fout, err := os.Create("/tmp/prova.nc")
 	require.NoError(t, err)
-	err = WriteHeader(&f, fout)
+	err = Header(&f, fout)
 	require.NoError(t, err)
 	require.NoError(t, fout.Close())
 

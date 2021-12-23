@@ -1,13 +1,27 @@
 package write
 
 import (
+	"bytes"
 	"encoding/binary"
 	"io"
 
 	"github.com/parro-it/ncdf/types"
 )
 
-func WriteHeader(f *types.File, w io.Writer) error {
+// VarData ...
+// TODO: use missing value for data
+func VarData[T types.BaseType](v types.Var, data []T, fd io.WriterAt) error {
+	var buf bytes.Buffer
+	if err := binary.Write(&buf, binary.BigEndian, data); err != nil {
+		return err
+	}
+	if _, err := fd.WriteAt(buf.Bytes(), int64(v.Offset)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func Header(f *types.File, w io.Writer) error {
 	// magic + version
 	bytes := []byte{'C', 'D', 'F', 2}
 	if _, err := w.Write(bytes); err != nil {
@@ -17,24 +31,32 @@ func WriteHeader(f *types.File, w io.Writer) error {
 	if err := binary.Write(w, binary.BigEndian, f.NumRecs); err != nil {
 		return err
 	}
-
 	// dimensions
-	tag := types.DimensionTag
 
-	if err := writeTag(tag, w); err != nil {
-		return err
-	}
-
-	if err := binary.Write(w, binary.BigEndian, int32(len(f.Dimensions))); err != nil {
-		return err
-	}
-
-	for _, d := range f.Dimensions {
-		if err := writeDimension(d, w); err != nil {
+	if f.Dimensions == nil || len(f.Dimensions) == 0 {
+		if err := writeTag(types.ZeroTag, w); err != nil {
 			return err
 		}
-	}
+		if err := binary.Write(w, binary.BigEndian, int32(0)); err != nil {
+			return err
+		}
+	} else {
+		tag := types.DimensionTag
 
+		if err := writeTag(tag, w); err != nil {
+			return err
+		}
+
+		if err := binary.Write(w, binary.BigEndian, int32(len(f.Dimensions))); err != nil {
+			return err
+		}
+
+		for _, d := range f.Dimensions {
+			if err := writeDimension(d, w); err != nil {
+				return err
+			}
+		}
+	}
 	// attrs
 
 	if err := writeAttrs(w, f.Attrs); err != nil {
@@ -42,17 +64,26 @@ func WriteHeader(f *types.File, w io.Writer) error {
 	}
 
 	// vars
-	if err := writeTag(types.VariableTag, w); err != nil {
-		return err
-	}
-
-	if err := binary.Write(w, binary.BigEndian, int32(len(f.Vars))); err != nil {
-		return err
-	}
-
-	for _, v := range f.Vars {
-		if err := writeVar(f, v, w); err != nil {
+	if f.Vars == nil || len(f.Vars) == 0 {
+		if err := writeTag(types.ZeroTag, w); err != nil {
 			return err
+		}
+		if err := binary.Write(w, binary.BigEndian, int32(0)); err != nil {
+			return err
+		}
+	} else {
+		if err := writeTag(types.VariableTag, w); err != nil {
+			return err
+		}
+
+		if err := binary.Write(w, binary.BigEndian, int32(len(f.Vars))); err != nil {
+			return err
+		}
+
+		for _, v := range f.Vars {
+			if err := writeVar(f, v, w); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -68,6 +99,15 @@ func writeTag(tag types.Tag, w io.Writer) error {
 }
 
 func writeAttrs(w io.Writer, attrs map[string]types.Attr) error {
+	if attrs == nil || len(attrs) == 0 {
+		if err := writeTag(types.ZeroTag, w); err != nil {
+			return err
+		}
+		if err := binary.Write(w, binary.BigEndian, int32(0)); err != nil {
+			return err
+		}
+		return nil
+	}
 	if err := writeTag(types.AttributeTag, w); err != nil {
 		return err
 	}

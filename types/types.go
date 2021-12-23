@@ -23,6 +23,22 @@ type File struct {
 	Vars       map[string]Var
 }
 
+type OrderedMap[T any] struct {
+	seq []T
+	idx map[string]T
+}
+
+func (m *OrderedMap[T]) Let() int {
+	return 0
+}
+func (m *OrderedMap[T]) Set(key string, value T) {
+
+}
+func (m *OrderedMap[T]) Get(key string) T {
+	var empty T
+	return empty
+}
+
 func (f File) ByteSize() int32 {
 	var szAttrs int
 	szAttrs += 8 // len+tag

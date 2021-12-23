@@ -28,8 +28,13 @@ func main() {
 		panic(err)
 	}
 	defer out.Close()
-	if err := write.WriteHeader(f, out); err != nil {
+	f.ComputeSizes()
+
+	if err := write.Header(f, out); err != nil {
 		panic(err)
+	}
+	for _, v := range f.Vars {
+		write.VarData(v, make([]float32, 100), out)
 	}
 
 }
