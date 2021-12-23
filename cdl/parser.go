@@ -64,10 +64,11 @@ func (p *Parser) parseVariables(f *types.File) bool {
 	for _, d := range f.Dimensions {
 		dimensions[d.Name] = &d
 	}
+	if p.consume() || p.last.Type == TkCurClose {
+		return false
+	}
 	for {
-		if p.consume() || p.last.Type == TkCurClose {
-			return false
-		}
+
 		var v types.Var
 		if p.last.Type != TkVarType {
 			panic("variable type expected")
@@ -128,8 +129,9 @@ func (p *Parser) parseVariables(f *types.File) bool {
 					panic("`}` expected")
 				}
 				if p.last.Type == TkCurClose || p.last.Type == TkData || p.last.Type == TkVariables {
-					return true
+					return false
 				}
+				break
 			}
 
 		}

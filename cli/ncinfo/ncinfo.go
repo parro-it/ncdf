@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/parro-it/ncdf"
+	"github.com/parro-it/ncdf/read"
 )
 
 func main() {
-	f, err := ncdf.Open("fixtures/exampl2.nc")
+	f, err := read.Open("fixtures/exampl2.nc")
 	if err != nil {
 		panic(nil)
 	}

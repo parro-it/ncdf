@@ -1,10 +1,11 @@
-package ncdf
+package write
 
 import (
 	"bytes"
 	"os"
 	"testing"
 
+	"github.com/parro-it/ncdf/read"
 	"github.com/parro-it/ncdf/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -95,13 +96,14 @@ func (bc BufCloser) Seek(offset int64, whence int) (int64, error) {
 	return 0, nil
 }
 func TestWriteHeader(t *testing.T) {
-	fout, err := os.CreateTemp("/tmp", "")
+	fout, err := os.Create("/tmp/prova.nc")
 	require.NoError(t, err)
+	defer fout.Close()
 	err = WriteHeader(&f, fout)
 	require.NoError(t, err)
 	require.NoError(t, fout.Close())
 
-	f2, err := Open(fout.Name())
+	f2, err := read.Open(fout.Name())
 	//f2.Count = 0
 	require.NoError(t, err)
 	assert.Equal(t, &f, f2)

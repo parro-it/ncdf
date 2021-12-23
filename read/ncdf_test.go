@@ -1,4 +1,4 @@
-package ncdf
+package read
 
 import (
 	"os"
@@ -10,14 +10,14 @@ import (
 )
 
 func TestOpen(t *testing.T) {
-	f, err := Open("fixtures/exampl2.nc")
+	f, err := Open("../fixtures/exampl2.nc")
 	require.NoError(t, err)
 	assert.NotNil(t, f)
 	//f.Close()
 }
 
 func TestVarData(t *testing.T) {
-	f, err := Open("fixtures/exampl2.nc")
+	f, err := Open("../fixtures/exampl2.nc")
 	require.NoError(t, err)
 	require.NotNil(t, f)
 	//defer f.Close()
@@ -31,7 +31,7 @@ func TestVarData(t *testing.T) {
 		dim *= int(d.Len)
 	}
 
-	fd, err := os.Open("fixtures/exampl2.nc")
+	fd, err := os.Open("../fixtures/exampl2.nc")
 	require.NoError(t, err)
 	defer fd.Close()
 
@@ -65,7 +65,7 @@ func TestCheck(t *testing.T) {
 		assert.NoError(t, f.Version.Check())
 	})
 	t.Run("NumRecs", func(t *testing.T) {
-		f, err := Open("fixtures/exampl2.nc")
+		f, err := Open("../fixtures/exampl2.nc")
 		assert.NoError(t, err)
 		require.NotNil(t, f)
 		assert.Equal(t, int32(1), f.NumRecs)
@@ -74,7 +74,7 @@ func TestCheck(t *testing.T) {
 	})
 
 	t.Run("Dimensions", func(t *testing.T) {
-		f, err := Open("fixtures/exampl2.nc")
+		f, err := Open("../fixtures/exampl2.nc")
 		require.NotNil(t, f)
 		//f.Close()
 		assert.NoError(t, err)
@@ -89,7 +89,7 @@ func TestCheck(t *testing.T) {
 	})
 
 	t.Run("Variables", func(t *testing.T) {
-		f, err := Open("fixtures/exampl2.nc")
+		f, err := Open("../fixtures/exampl2.nc")
 		require.NotNil(t, f)
 		assert.NoError(t, err)
 		time := f.Vars["Times"]
@@ -108,7 +108,7 @@ func TestCheck(t *testing.T) {
 	})
 
 	t.Run("Global attributes", func(t *testing.T) {
-		f, err := Open("fixtures/exampl2.nc")
+		f, err := Open("../fixtures/exampl2.nc")
 		require.NotNil(t, f)
 		assert.NoError(t, err)
 		assert.Equal(t, types.Attr{
