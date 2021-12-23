@@ -25,6 +25,26 @@ type File struct {
 	Vars       ordmap.OrderedMap[Var, string]
 }
 
+type Attrs []Attr
+
+func (attrs Attrs) Map() ordmap.OrderedMap[Attr, string] {
+	var res ordmap.OrderedMap[Attr, string]
+	for _, a := range attrs {
+		res.Set(a.Name, a)
+	}
+	return res
+}
+
+type Vars []Var
+
+func (vars Vars) Map() ordmap.OrderedMap[Var, string] {
+	var res ordmap.OrderedMap[Var, string]
+	for _, a := range vars {
+		res.Set(a.Name, a)
+	}
+	return res
+}
+
 func (f File) ByteSize() int32 {
 	var szAttrs int
 	szAttrs += 8 // len+tag

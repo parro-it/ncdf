@@ -3,7 +3,6 @@ package types
 import (
 	"testing"
 
-	"github.com/parro-it/ncdf/ordmap"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,18 +38,15 @@ func TestTypes(t *testing.T) {
 func TestVar(t *testing.T) {
 	v := Var{
 		Dimensions: []*Dimension{{Name: "dim1"}, {Name: "dim2"}},
-		Attrs: ordmap.From([]ordmap.Item[Attr, string]{
-			{Attr{
-				Name: "len",
-				Val:  42,
-				Type: Short,
-			}, "len"},
-			{Attr{
-				Name: "alt",
-				Val:  142,
-				Type: Int,
-			}, "alt"},
-		}),
+		Attrs: Attrs{{
+			Name: "len",
+			Val:  42,
+			Type: Short,
+		}, {
+			Name: "alt",
+			Val:  142,
+			Type: Int,
+		}}.Map(),
 		Name: "test",
 		Type: Double,
 	}

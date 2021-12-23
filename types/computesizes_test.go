@@ -3,7 +3,6 @@ package types
 import (
 	"testing"
 
-	"github.com/parro-it/ncdf/ordmap"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,54 +18,43 @@ var file = File{
 	Version:    [4]byte{},
 	NumRecs:    0,
 	Dimensions: dims,
-	Attrs: ordmap.From([]ordmap.Item[Attr, string]{
-		{Attr{
-			Name: "a1",
+	Attrs: Attrs{{
+		Name: "a1",
+		Val:  int16(42),
+		Type: Short,
+	}, {
+		Name: "a2",
+		Val:  int16(42),
+		Type: Short,
+	}}.Map(),
+	Vars: Vars{{
+		Name: "red",
+		Attrs: Attrs{{
+			Name: "t1",
 			Val:  int16(42),
 			Type: Short,
-		}, "a1"},
-		{Attr{
-			Name: "a2",
+		}, {
+			Name: "t2",
 			Val:  int16(42),
 			Type: Short,
-		}, "a2"},
-	}),
-	Vars: ordmap.From([]ordmap.Item[Var, string]{
-		{Var{
-			Name: "red",
-			Attrs: ordmap.From([]ordmap.Item[Attr, string]{
-				{Attr{
-					Name: "t1",
-					Val:  int16(42),
-					Type: Short,
-				}, "t1"},
-				{Attr{
-					Name: "t2",
-					Val:  int16(42),
-					Type: Short,
-				}, "t2"},
-			}),
-			Dimensions: []*Dimension{&dims[0], &dims[1]},
-			Type:       Short,
-		}, "red"},
-		{Var{
-			Name: "blu",
-			Attrs: ordmap.From([]ordmap.Item[Attr, string]{
-				{Attr{
-					Name: "t1",
-					Val:  int16(42),
-					Type: Short,
-				}, "t1"},
-				{Attr{
-					Name: "t2",
-					Val:  int16(42),
-					Type: Short,
-				}, "t2"},
-			}),
-			Dimensions: []*Dimension{&dims[0], &dims[1]},
-			Type:       Short,
-		}, "blu"},
-	}),
+		}}.Map(),
+
+		Dimensions: []*Dimension{&dims[0], &dims[1]},
+		Type:       Short,
+	}, {
+		Name: "blu",
+		Attrs: Attrs{{
+			Name: "t1",
+			Val:  int16(42),
+			Type: Short,
+		}, {
+			Name: "t2",
+			Val:  int16(42),
+			Type: Short,
+		}}.Map(),
+		Dimensions: []*Dimension{&dims[0], &dims[1]},
+		Type:       Short,
+	}}.Map(),
 }
 
 func TestComputeSizes(t *testing.T) {

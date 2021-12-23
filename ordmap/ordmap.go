@@ -10,6 +10,20 @@ type Item[TVal any, TKey comparable] struct {
 	K TKey
 }
 
+type Items[TVal any, TKey comparable] []Item[TVal, TKey]
+
+/*
+func (it Item[TVal, TKey]) And(key TKey, val TVal) Items[TVal, TKey] {
+	return Items[TVal, TKey]{it, Pair(key, val)}
+}
+func (it Items[TVal, TKey]) And(key TKey, val TVal) Items[TVal, TKey] {
+	return append(it, Pair(key, val))
+}
+
+func Pair[TVal any, TKey comparable](key TKey, val TVal) Item[TVal, TKey] {
+	return Item[TVal, TKey]{V: val, K: key}
+}
+
 // From return a new OrderedMap filled with
 // the key/values specified in args
 func From[TVal any, TKey comparable](args []Item[TVal, TKey]) OrderedMap[TVal, TKey] {
@@ -19,7 +33,7 @@ func From[TVal any, TKey comparable](args []Item[TVal, TKey]) OrderedMap[TVal, T
 	}
 	return res
 }
-
+*/
 // Len returns number of elements contained in the map.
 // It returns 0 for an unitialized OrderedMap
 func (m *OrderedMap[TVal, TKey]) Len() int {
@@ -58,12 +72,16 @@ func (m *OrderedMap[TVal, TKey]) Keys() []TKey {
 // Keys returns all keys contained in the map,
 // in the same order as they was inserted in the map.
 // It returns an empty slice for an unitialized OrderedMap.
-// TODO: no append to m.seq if key is existing
 func (m *OrderedMap[TVal, TKey]) Set(key TKey, value TVal) {
-	m.seq = append(m.seq, key)
+
 	if m.idx == nil {
 		m.idx = make(map[TKey]TVal)
 	}
+
+	if _, exists := m.idx[key]; !exists {
+		m.seq = append(m.seq, key)
+	}
+
 	m.idx[key] = value
 }
 

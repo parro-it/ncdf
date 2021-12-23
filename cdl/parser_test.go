@@ -36,14 +36,12 @@ func TestFailures(t *testing.T) {
 		Dimensions: []types.Dimension{
 			{Name: "a", Len: 10},
 		},
-		Vars: ordmap.From([]ordmap.Item[types.Var, string]{{
-			types.Var{
-				Dimensions: []*types.Dimension{{Name: "a", Len: 10}},
-				Name:       "pippo",
-				Type:       types.Float,
-				Size:       40,
-			}, "pippo"},
-		}),
+		Vars: types.Vars{{
+			Dimensions: []*types.Dimension{{Name: "a", Len: 10}},
+			Name:       "pippo",
+			Type:       types.Float,
+			Size:       40,
+		}}.Map(),
 	}, "")
 
 	assertParseTo(t, "netcdf fname {variables:float pippo (a)}", nil, "Parse failed: unknown dimension name `a`")

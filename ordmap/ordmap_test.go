@@ -68,6 +68,8 @@ func TestItems(t *testing.T) {
 		{12, "a"},
 	}, m.Items())
 }
+
+/*
 func TestFrom(t *testing.T) {
 	m := ordmap.From([]ordmap.Item[int, string]{
 		{13, "b"},
@@ -77,7 +79,7 @@ func TestFrom(t *testing.T) {
 		{13, "b"},
 		{12, "a"},
 	}, m.Items())
-}
+}*/
 func TestKeys(t *testing.T) {
 	var m ordmap.OrderedMap[int, string]
 	m.Set("b", 13)
