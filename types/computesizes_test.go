@@ -47,8 +47,6 @@ var file = File{
 			},
 			Dimensions: []*Dimension{&dims[0], &dims[1]},
 			Type:       Short,
-			Size:       42,
-			Offset:     42,
 		},
 		"blu": {
 			Name: "blu",
@@ -66,17 +64,16 @@ var file = File{
 			},
 			Dimensions: []*Dimension{&dims[0], &dims[1]},
 			Type:       Short,
-			Size:       42,
-			Offset:     42,
 		},
 	},
 }
 
 func TestComputeSizes(t *testing.T) {
-	var expected = 12 + 12 + 4 /*len*/ + 4 /*tag*/ + //dims
-		20 + 20 + 4 + 4 + //attrs
-		84 + 84 + 4 + 4 + //vars
-		4 + 4 // magic + recs
-	assert.Equal(t, int32(expected), file.ByteSize())
-
+	var headSz = 264
+	assert.Equal(t, int32(headSz), file.ByteSize())
+	file.ComputeSizes()
+	assert.Equal(t, uint64(264), file.Vars["red"].Offset)
+	assert.Equal(t, int32(12), file.Vars["red"].Size)
+	assert.Equal(t, uint64(276), file.Vars["blu"].Offset)
+	assert.Equal(t, int32(12), file.Vars["blu"].Size)
 }

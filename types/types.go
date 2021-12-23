@@ -105,6 +105,16 @@ type Attr struct {
 // TODO: add support for array values
 // TODO: add padding for 32bit alignment
 func (a Attr) ByteSize() int32 {
+	// pad value
+	sz := a.ValueByteSize()
+
+	return stringByteSize(a.Name) + // Name string
+		4 + // Type
+		4 + // len
+		sz
+}
+
+func (a Attr) ValueByteSize() int32 {
 	var sz int32
 	switch a.Type {
 	case Double:
@@ -120,15 +130,39 @@ func (a Attr) ByteSize() int32 {
 	case Char:
 		sz = 1
 	}
-	// pad value
+
 	if sz < 4 {
 		sz = 4
 	}
+	return sz
+}
 
-	return stringByteSize(a.Name) + // Name string
-		4 + // Type
-		4 + // len
-		sz
+func (v Var) ValueByteSize() int32 {
+	var sz int32
+	switch v.Type {
+	case Double:
+		sz = 8
+	case Short:
+		sz = 2
+	case Int:
+		sz = 4
+	case Byte:
+		sz = 1
+	case Float:
+		sz = 4
+	case Char:
+		sz = 1
+	}
+	for _, d := range v.Dimensions {
+		sz *= d.Len
+	}
+
+	rest := 4 - (sz % 4)
+	if rest != 4 {
+		sz += rest
+	}
+
+	return sz
 }
 
 // Dimension ...

@@ -10,7 +10,7 @@ import (
 	"github.com/parro-it/ncdf/types"
 )
 
-func ReadHeader(fd io.ReadSeeker) (*types.File, error) {
+func Header(fd io.ReadSeeker) (*types.File, error) {
 	f := &types.File{}
 	var err error
 
@@ -294,8 +294,8 @@ func readTag(fd io.ReadSeeker) (types.Tag, error) {
 	return types.Tag(buf[3]), nil
 }
 
-// Open ...
-func Open(file string) (*types.File, error) {
+// HeaderFromDisk ...
+func HeaderFromDisk(file string) (*types.File, error) {
 
 	fd, err := os.Open(file)
 	if err != nil {
@@ -303,7 +303,7 @@ func Open(file string) (*types.File, error) {
 	}
 	defer fd.Close()
 
-	f, err := ReadHeader(fd)
+	f, err := Header(fd)
 	if err != nil {
 		return nil, err
 	}

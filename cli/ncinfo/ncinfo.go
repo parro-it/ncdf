@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	f, err := read.Open("fixtures/exampl2.nc")
+	f, err := read.HeaderFromDisk("fixtures/exampl2.nc")
 	if err != nil {
 		panic(nil)
 	}

@@ -107,7 +107,7 @@ func TestWriteHeader(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, expectedSize, st.Size())
 
-	f2, err := read.Open(fout.Name())
+	f2, err := read.HeaderFromDisk(fout.Name())
 	//f2.Count = 0
 	require.NoError(t, err)
 	assert.Equal(t, &f, f2)
