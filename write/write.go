@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
+	"unsafe"
 
 	"github.com/parro-it/ncdf/ordmap"
 	"github.com/parro-it/ncdf/types"
@@ -126,39 +127,60 @@ func writeAttrs(w io.Writer, attrs ordmap.OrderedMap[types.Attr, string]) error 
 }
 
 func writeAttr(a types.Attr, w io.Writer) error {
-	if err := binary.Write(w, binary.BigEndian, int32(len(a.Name))); err != nil {
+	if err := writeSlice(w, []byte(a.Name)); err != nil {
 		return err
-	}
-
-	if err := binary.Write(w, binary.BigEndian, []byte(a.Name)); err != nil {
-		return err
-	}
-	rest := 4 - (len(a.Name) % 4)
-	if rest != 4 {
-		buf := make([]byte, rest)
-		if _, err := w.Write(buf); err != nil {
-			return err
-		}
 	}
 	if err := binary.Write(w, binary.BigEndian, a.Type); err != nil {
 		return err
 	}
 
-	values := a.Val.([]int16)
-	if err := binary.Write(w, binary.BigEndian, int32(len(values))); err != nil {
-		return err
-	}
-	for _, v := range values {
-		if err := binary.Write(w, binary.BigEndian, v); err != nil {
-			return err
-		}
-	}
-	// TODO: implements meaningful padding
-	if err := binary.Write(w, binary.BigEndian, int16(0)); err != nil {
+	err := writeAttrValue(a, w)
+	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func writeSlice[T types.BaseType](w io.Writer, val []T) error {
+	if err := binary.Write(w, binary.BigEndian, int32(len(val))); err != nil {
+		return err
+	}
+
+	if err := binary.Write(w, binary.BigEndian, val); err != nil {
+		return err
+	}
+	var v T
+	sz := int(unsafe.Sizeof(v))
+	if sz < 4 {
+		rest := 4 - (len(val)*sz)%4
+		if rest != 4 {
+			buf := make([]byte, rest)
+			if _, err := w.Write(buf); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func writeAttrValue(a types.Attr, w io.Writer) error {
+	values := a.Val.([]int16)
+	return writeSlice(w, values)
+	/*
+		if err := binary.Write(w, binary.BigEndian, int32(len(values))); err != nil {
+			return err
+		}
+		for _, v := range values {
+			if err := binary.Write(w, binary.BigEndian, v); err != nil {
+				return err
+			}
+		}
+		// TODO: implements meaningful padding
+		if err := binary.Write(w, binary.BigEndian, int16(0)); err != nil {
+			return err
+		}
+		return nil*/
 }
 
 func writeVar(f *types.File, v types.Var, w io.Writer) error {

@@ -55,6 +55,8 @@ func (p *Parser) parseDimensions(f *types.File) bool {
 		}
 	}
 }
+
+// TODO: parse attributes
 func (p *Parser) parseVariables(f *types.File) bool {
 	if p.consume() || p.last.Type != TkColon {
 		log.Panicf("`:` is required after a `variables` directive")
@@ -126,6 +128,9 @@ func (p *Parser) parseVariables(f *types.File) bool {
 				f.Vars.Set(v.Name, v)
 				if p.consume() {
 					panic("`}` expected")
+				}
+				if p.last.Type == TkName {
+					return true
 				}
 				if p.last.Type == TkCurClose || p.last.Type == TkData || p.last.Type == TkVariables {
 					return false
