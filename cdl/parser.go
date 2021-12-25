@@ -142,6 +142,7 @@ func (p *Parser) parseVariables(f *types.File) bool {
 
 	}
 }
+
 func (p *Parser) parseData(f *types.File) bool {
 	return false
 }
