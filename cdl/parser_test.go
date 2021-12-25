@@ -48,7 +48,7 @@ func TestFailures(t *testing.T) {
 	assertParseTo(t, "netcdf fname {variables:float pippo (}", nil, "Parse failed: dimension name expected")
 	assertParseTo(t, "netcdf fname {variables:float pippo }", nil, "Parse failed: dimension list expected")
 	assertParseTo(t, "netcdf fname {variables:float }", nil, "Parse failed: variable name expected")
-	assertParseTo(t, "netcdf fname {variables:wrong}", nil, "Parse failed: variable type expected")
+	assertParseTo(t, "netcdf fname {variables:wrong}", nil, "Parse failed: : expected")
 	assertParseTo(t, "netcdf fname {variables:}", &types.File{Vars: ordmap.OrderedMap[types.Var, string]{}}, "")
 
 	assertParseTo(t, "netcdf fname {dimensions: a=10; b = 20;}", &types.File{Dimensions: []types.Dimension{

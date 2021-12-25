@@ -63,19 +63,74 @@ func (p *Parser) parseVariables(f *types.File) bool {
 	dimensions := mapDimensions(f)
 
 	for {
+		if p.last.Type == TkVarType {
+			v := p.parseVariable(dimensions)
+			f.Vars.Set(v.Name, v)
+		} else if p.last.Type == TkName || p.last.Type == TkColon {
+			a, v := p.parseAttribute(f, dimensions)
+			if v == nil {
+				f.Attrs.Set(a.Name, a)
+			} else {
+				v.Attrs.Set(a.Name, a)
+				f.Vars.Set(v.Name, *v)
+			}
 
-		v := p.parseVariable(dimensions)
-		f.Vars.Set(v.Name, v)
+		} else {
+			log.Panicf("unexpected token %v", p.last)
+		}
 
 		if p.last.Type == TkCurClose {
 			return false
 		}
 
-		if p.last.Type == TkName || p.last.Type == TkData || p.last.Type == TkVariables {
+		if p.last.Type == TkDimensions || p.last.Type == TkData || p.last.Type == TkVariables {
 			return true
 		}
 
 	}
+}
+
+func (p *Parser) parseAttribute(f *types.File, dimensions map[string]*types.Dimension) (types.Attr, *types.Var) {
+	var a types.Attr
+	var v *types.Var
+	if p.last.Type == TkName {
+		tmp := f.Vars.Get(p.last.Text)
+		v = &tmp
+
+		if p.consume() || p.last.Type != TkColon {
+			panic(": expected")
+		}
+	}
+
+	if p.consume() || p.last.Type != TkName {
+		panic("attribute name expected")
+	}
+	a.Name = p.last.Text
+
+	if p.consume() || p.last.Type != TkEqual {
+		panic("attribute name expected")
+	}
+
+	if p.consume() {
+		panic("attribute value expected")
+	}
+
+	if p.last.Type == TkDec {
+		a.Val = []float32{float32(p.last.NumVal)}
+		a.Type = types.Float
+	} else if p.last.Type == TkInt {
+		a.Val = []int32{int32(p.last.NumVal)}
+		a.Type = types.Int
+	} else if p.last.Type == TkStr {
+		a.Val = []byte(p.last.Text)
+		a.Type = types.Char
+	} else {
+		panic("unsupported type")
+	}
+	if p.consume() || p.last.Type != TkSemicolon {
+		panic("; expected")
+	}
+	return a, v
 }
 
 func (p *Parser) parseVariable(dimensions map[string]*types.Dimension) types.Var {
