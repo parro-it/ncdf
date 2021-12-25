@@ -10,16 +10,10 @@ import (
 // Parser ...
 type Parser struct {
 	Tokens chan Token
-	buf    *Token
 	last   Token
 }
 
 func (p *Parser) consume() bool {
-	if p.buf != nil {
-		p.last = *p.buf
-		p.buf = nil
-		return p.last.Type == TkEmpty
-	}
 	p.last = <-p.Tokens
 	return p.last.Type == TkEmpty
 }
@@ -61,86 +55,100 @@ func (p *Parser) parseVariables(f *types.File) bool {
 	if p.consume() || p.last.Type != TkColon {
 		log.Panicf("`:` is required after a `variables` directive")
 	}
+
+	if p.consume() || p.last.Type == TkCurClose {
+		return false
+	}
+
+	dimensions := mapDimensions(f)
+
+	for {
+
+		v := p.parseVariable(dimensions)
+		f.Vars.Set(v.Name, v)
+
+		if p.last.Type == TkCurClose {
+			return false
+		}
+
+		if p.last.Type == TkName || p.last.Type == TkData || p.last.Type == TkVariables {
+			return true
+		}
+
+	}
+}
+
+func (p *Parser) parseVariable(dimensions map[string]*types.Dimension) types.Var {
+	var v types.Var
+	if p.last.Type != TkVarType {
+		log.Panicf("variable type expected")
+	}
+	v.Size = 1
+	for _, d := range dimensions {
+		v.Size *= d.Len
+	}
+	switch p.last.Text {
+	case "float":
+		v.Size *= 4
+		v.Type = types.Float
+	case "byte":
+		v.Type = types.Byte
+	case "char":
+		v.Type = types.Char
+	case "short":
+		v.Size *= 2
+		v.Type = types.Short
+	case "int":
+		v.Size *= 4
+		v.Type = types.Int
+	case "double":
+		v.Size *= 8
+		v.Type = types.Double
+	}
+
+	if p.consume() || p.last.Type != TkName {
+		panic("variable name expected")
+	}
+	v.Name = p.last.Text
+
+	if p.consume() || p.last.Type != TkParOpen {
+		panic("dimension list expected")
+	}
+
+	for {
+		if p.consume() || p.last.Type != TkName {
+			panic("dimension name expected")
+		}
+		d, ok := dimensions[p.last.Text]
+		if !ok {
+			log.Panicf("unknown dimension name `%s`", p.last.Text)
+		}
+		if p.consume() {
+			panic("dimension list not closed by `)`")
+		}
+
+		v.Dimensions = append(v.Dimensions, d)
+
+		if p.last.Type == TkParClose {
+			if p.consume() || p.last.Type != TkSemicolon {
+				panic("`;` expected")
+			}
+			if p.consume() {
+				panic("`}` expected")
+			}
+
+			return v
+		}
+
+	}
+}
+
+func mapDimensions(f *types.File) map[string]*types.Dimension {
 	dimensions := map[string]*types.Dimension{}
 	for _, d := range f.Dimensions {
 		dimensions[d.Name] = &d
 	}
-	if p.consume() || p.last.Type == TkCurClose {
-		return false
-	}
-	for {
-
-		var v types.Var
-		if p.last.Type != TkVarType {
-			panic("variable type expected")
-		}
-		v.Size = 1
-		for _, d := range f.Dimensions {
-			v.Size *= d.Len
-		}
-		switch p.last.Text {
-		case "float":
-			v.Size *= 4
-			v.Type = types.Float
-		case "byte":
-			v.Type = types.Byte
-		case "char":
-			v.Type = types.Char
-		case "short":
-			v.Size *= 2
-			v.Type = types.Short
-		case "int":
-			v.Size *= 4
-			v.Type = types.Int
-		case "double":
-			v.Size *= 8
-			v.Type = types.Double
-		}
-
-		if p.consume() || p.last.Type != TkName {
-			panic("variable name expected")
-		}
-		v.Name = p.last.Text
-
-		if p.consume() || p.last.Type != TkParOpen {
-			panic("dimension list expected")
-		}
-
-		for {
-			if p.consume() || p.last.Type != TkName {
-				panic("dimension name expected")
-			}
-			d, ok := dimensions[p.last.Text]
-			if !ok {
-				log.Panicf("unknown dimension name `%s`", p.last.Text)
-			}
-			if p.consume() {
-				panic("dimension list not closed by `)`")
-			}
-
-			v.Dimensions = append(v.Dimensions, d)
-
-			if p.last.Type == TkParClose {
-				if p.consume() || p.last.Type != TkSemicolon {
-					panic("`;` expected")
-				}
-
-				f.Vars.Set(v.Name, v)
-				if p.consume() {
-					panic("`}` expected")
-				}
-				if p.last.Type == TkName {
-					return true
-				}
-				if p.last.Type == TkCurClose || p.last.Type == TkData || p.last.Type == TkVariables {
-					return false
-				}
-				break
-			}
-
-		}
-
-	}
+	return dimensions
 }
 
 func (p *Parser) parseData(f *types.File) bool {
@@ -163,12 +171,6 @@ func (p *Parser) parseStatement(f *types.File) bool {
 	}
 
 	return false
-}
-
-func (p *Parser) peek() Token {
-	tk := <-p.Tokens
-	p.buf = &tk
-	return *p.buf
 }
 
 // Parse ...
