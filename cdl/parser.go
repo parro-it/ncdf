@@ -119,8 +119,8 @@ func (p *Parser) parseAttribute(f *types.File, dimensions map[string]*types.Dime
 		a.Val = []float32{float32(p.last.NumVal)}
 		a.Type = types.Float
 	} else if p.last.Type == TkInt {
-		a.Val = []int32{int32(p.last.NumVal)}
-		a.Type = types.Int
+		a.Val = []int16{int16(p.last.NumVal)}
+		a.Type = types.Short
 	} else if p.last.Type == TkStr {
 		a.Val = []byte(p.last.Text)
 		a.Type = types.Char
@@ -129,6 +129,9 @@ func (p *Parser) parseAttribute(f *types.File, dimensions map[string]*types.Dime
 	}
 	if p.consume() || p.last.Type != TkSemicolon {
 		panic("; expected")
+	}
+	if p.consume() {
+		panic("} expected")
 	}
 	return a, v
 }

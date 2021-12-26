@@ -31,6 +31,31 @@ func assertParseTo(t *testing.T, code string, expectedFile *types.File, expected
 
 }
 
+func TestAttributes(t *testing.T) {
+	assertParseTo(t, "netcdf fname {dimensions: a=1; variables:float pippo (a); pippo:len=15; :lon=45;}", &types.File{
+		Dimensions: []types.Dimension{
+			{Name: "a", Len: 1},
+		},
+		Vars: types.Vars{{
+			Dimensions: []*types.Dimension{{Name: "a", Len: 1}},
+			Name:       "pippo",
+			Type:       types.Float,
+			Size:       4,
+			Attrs: types.Attrs{{
+				Name: "len",
+				Type: types.Short,
+				Val:  []int16{15},
+			}}.Map(),
+		}}.Map(),
+		Attrs: types.Attrs{{
+			Name: "lon",
+			Type: types.Short,
+			Val:  []int16{45},
+		}}.Map(),
+	}, "")
+
+}
+
 func TestFailures(t *testing.T) {
 	assertParseTo(t, "netcdf fname {dimensions: a=10; variables:float pippo (a);}", &types.File{
 		Dimensions: []types.Dimension{
