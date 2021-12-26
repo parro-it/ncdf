@@ -209,6 +209,7 @@ func mapDimensions(f *types.File) map[string]*types.Dimension {
 	return dimensions
 }
 
+// TODO: parse CDL data
 func (p *Parser) parseData(f *types.File) bool {
 	return false
 }

@@ -167,20 +167,6 @@ func writeSlice[T types.BaseType](w io.Writer, val []T) error {
 func writeAttrValue(a types.Attr, w io.Writer) error {
 	values := a.Val.([]int16)
 	return writeSlice(w, values)
-	/*
-		if err := binary.Write(w, binary.BigEndian, int32(len(values))); err != nil {
-			return err
-		}
-		for _, v := range values {
-			if err := binary.Write(w, binary.BigEndian, v); err != nil {
-				return err
-			}
-		}
-		// TODO: implements meaningful padding
-		if err := binary.Write(w, binary.BigEndian, int16(0)); err != nil {
-			return err
-		}
-		return nil*/
 }
 
 func writeVar(f *types.File, v types.Var, w io.Writer) error {
