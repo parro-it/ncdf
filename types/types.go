@@ -240,12 +240,6 @@ func (v Version) Check() error {
 	return nil
 }
 
-/*
-// Close ...
-func (f *File) Close() error {
-	return f.fd.Close()
-}
-*/
 // MarshalJSON ...
 func (t Type) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, t.String())), nil

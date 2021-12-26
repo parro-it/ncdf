@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/parro-it/ncdf/cdl"
 	"github.com/parro-it/ncdf/read"
 )
 
@@ -17,5 +18,5 @@ func main() {
 		panic(nil)
 	}
 	fmt.Println(string(buf))*/
-	fmt.Println(f.CDL())
+	fmt.Println(cdl.CDLFile(f))
 }
