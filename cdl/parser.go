@@ -141,28 +141,12 @@ func (p *Parser) parseVariable(dimensions map[string]*types.Dimension) types.Var
 	if p.last.Type != TkVarType {
 		log.Panicf("variable type expected")
 	}
-	v.Size = 1
+	size := 1
 	for _, d := range dimensions {
-		v.Size *= d.Len
+		size *= int(d.Len)
 	}
-	switch p.last.Text {
-	case "float":
-		v.Size *= 4
-		v.Type = types.Float
-	case "byte":
-		v.Type = types.Byte
-	case "char":
-		v.Type = types.Char
-	case "short":
-		v.Size *= 2
-		v.Type = types.Short
-	case "int":
-		v.Size *= 4
-		v.Type = types.Int
-	case "double":
-		v.Size *= 8
-		v.Type = types.Double
-	}
+	v.Type = types.FromCDLName(p.last.Text)
+	v.Size = int32(v.Type.ArraySize(size))
 
 	if p.consume() || p.last.Type != TkName {
 		panic("variable name expected")

@@ -2,7 +2,6 @@ package cdl
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/parro-it/ncdf/ordmap"
@@ -34,37 +33,13 @@ func CDLDimension(f *types.Dimension) string {
 
 // CDL ...
 func CDLAttr(f *types.Attr) string {
-	switch v := f.Val.(type) {
-	case []int:
-		return fmt.Sprintf("%s = %d;", f.Name, v[0])
-	case []int32:
-		return fmt.Sprintf("%s = %d;", f.Name, v[0])
-	case []int16:
-		return fmt.Sprintf("%s = %d;", f.Name, v[0])
-	case []byte:
-		return fmt.Sprintf("%s = %d;", f.Name, v[0])
-	case string:
-		return fmt.Sprintf(`%s = "%s";`, f.Name, v)
-	case []float32:
-		return fmt.Sprintf("%s = %f;", f.Name, v[0])
-	case []float64:
-		return fmt.Sprintf("%s = %f;", f.Name, v[0])
-
-	case int:
-		return fmt.Sprintf("%s = %d;", f.Name, v)
-	case int32:
-		return fmt.Sprintf("%s = %d;", f.Name, v)
-	case int16:
-		return fmt.Sprintf("%s = %d;", f.Name, v)
-	case byte:
-		return fmt.Sprintf("%s = %d;", f.Name, v)
-	case float32:
-		return fmt.Sprintf("%s = %f;", f.Name, v)
-	case float64:
-		return fmt.Sprintf("%s = %f;", f.Name, v)
+	value := f.Type.ValueToString(f.Val)
+	if f.Type == types.Char {
+		value = `"` + value + `"`
 	}
 
-	return fmt.Sprintf("~UNKNOWN TYPE %v~", reflect.TypeOf(f.Val))
+	return fmt.Sprintf("%s = "+value+";", f.Name)
+
 }
 
 // CDL ...
@@ -98,22 +73,8 @@ func attributesCDL(attrs ordmap.OrderedMap[types.Attr, string], prefix string) s
 
 // CDL ...
 func CDLType(t types.Type) string {
-	switch t {
-	case types.Byte:
-		return "byte"
-	case types.Char:
-		return "char"
-	case types.Short:
-		return "short"
-	case types.Int:
-		return "int"
-	case types.Float:
-		return "float"
-	case types.Double:
-		return "double"
-	}
 
-	return fmt.Sprintf("[unknown type:%d]", t)
+	return t.CDLName()
 }
 
 func dimensionsCDL(dd []types.Dimension) string {

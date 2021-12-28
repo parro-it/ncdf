@@ -77,25 +77,6 @@ func (v Version) Check() error {
 	return nil
 }
 
-func (t Type) String() string {
-	switch t {
-	case Byte:
-		return "NC_BYTE"
-	case Char:
-		return "NC_CHAR"
-	case Short:
-		return "NC_SHORT"
-	case Int:
-		return "NC_INT"
-	case Float:
-		return "NC_FLOAT"
-	case Double:
-		return "NC_DOUBLE"
-	}
-
-	return fmt.Sprintf("[UNKNOWN:%d]", t)
-}
-
 func (t Tag) String() string {
 	switch t {
 	case ZeroTag:

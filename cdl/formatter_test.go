@@ -26,16 +26,20 @@ func TestDimensions(t *testing.T) {
 `, dimensionsCDL(dd))
 }
 
-func TestTypes(t *testing.T) {
-	assert.Equal(t, "float", CDLType(types.Float))
-	assert.Equal(t, "double", CDLType(types.Double))
-	assert.Equal(t, "int", CDLType(types.Int))
-	assert.Equal(t, "short", CDLType(types.Short))
-	assert.Equal(t, "char", CDLType(types.Char))
-	assert.Equal(t, "byte", CDLType(types.Byte))
+func TestAttr(t *testing.T) {
+	aa := map[string]types.Attr{
+		"1-a = 42.42;":  {Name: "a", Type: types.Float, Val: 42.42},
+		"2-a = 42.42;":  {Name: "a", Type: types.Double, Val: 42.42},
+		"3-a = 42;":     {Name: "a", Type: types.Int, Val: 42},
+		"4-a = 42;":     {Name: "a", Type: types.Short, Val: 42},
+		`5-a = "ciao";`: {Name: "a", Type: types.Char, Val: "ciao"},
+		"6-a = 42;":     {Name: "a", Type: types.Byte, Val: 42},
+	}
 
+	for expected, actual := range aa {
+		assert.Equal(t, expected[2:], CDLAttr(&actual))
+	}
 }
-
 func TestVar(t *testing.T) {
 	v := types.Var{
 		Dimensions: []*types.Dimension{{Name: "dim1"}, {Name: "dim2"}},

@@ -109,3 +109,55 @@ func TestArraySize(t *testing.T) {
 	assert.Equal(t, 20, Float.ArraySize(5))
 	assert.Equal(t, 40, Double.ArraySize(5))
 }
+func TestStringer(t *testing.T) {
+	assert.Equal(t, "NC_BYTE", Byte.String())
+	assert.Equal(t, "NC_CHAR", Char.String())
+	assert.Equal(t, "NC_SHORT", Short.String())
+	assert.Equal(t, "NC_INT", Int.String())
+	assert.Equal(t, "NC_FLOAT", Float.String())
+	assert.Equal(t, "NC_DOUBLE", Double.String())
+	assert.Equal(t, "[UNKNOWN TYPE:666]", Type(666).String())
+}
+
+func TestValueToString(t *testing.T) {
+	assert.Equal(t, "42", Byte.ValueToString(42))
+	assert.Equal(t, "42", Char.ValueToString("42"))
+	assert.Equal(t, "42", Short.ValueToString(42))
+	assert.Equal(t, "42", Int.ValueToString(42))
+	assert.Equal(t, "42.42", Float.ValueToString(42.42))
+	assert.Equal(t, "42.42", Double.ValueToString(42.42))
+	assert.Equal(t, "[UNKNOWN TYPE:666. VALUE: <nil>]", Type(666).ValueToString(nil))
+
+}
+
+func TestCDLName(t *testing.T) {
+	assert.Equal(t, "float", Float.CDLName())
+	assert.Equal(t, "double", Double.CDLName())
+	assert.Equal(t, "int", Int.CDLName())
+	assert.Equal(t, "short", Short.CDLName())
+	assert.Equal(t, "char", Char.CDLName())
+	assert.Equal(t, "byte", Byte.CDLName())
+	assert.Equal(t, "[unknown type:666]", Type(666).CDLName())
+}
+
+func TestFromCDLName(t *testing.T) {
+	assert.Equal(t, Float, FromCDLName("float"))
+	assert.Equal(t, Double, FromCDLName("double"))
+	assert.Equal(t, Int, FromCDLName("int"))
+	assert.Equal(t, Short, FromCDLName("short"))
+	assert.Equal(t, Char, FromCDLName("char"))
+	assert.Equal(t, Byte, FromCDLName("byte"))
+	assert.Equal(t, Unknown, FromCDLName("other"))
+
+}
+
+func TestFromValueType(t *testing.T) {
+	assert.Equal(t, Float, FromValueType[float32]())
+	assert.Equal(t, Double, FromValueType[float64]())
+	assert.Equal(t, Int, FromValueType[int32]())
+	assert.Equal(t, Short, FromValueType[int16]())
+	//assert.Equal(t, Char, FromValueType[rune]())
+	assert.Equal(t, Byte, FromValueType[byte]())
+	//assert.Equal(t, Unknown, FromValueType[byte]())
+
+}

@@ -41,7 +41,6 @@ func (v Var) ByteSize() int32 {
 }
 
 // TODO: add support for array values
-// TODO: add padding for 32bit alignment
 func (a Attr) ByteSize() int32 {
 	// pad value
 	sz := a.ValueByteSize()
