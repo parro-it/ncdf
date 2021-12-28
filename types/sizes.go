@@ -53,63 +53,22 @@ func (a Attr) ByteSize() int32 {
 }
 
 func (a Attr) ValueByteSize() int32 {
-	var sz int32
-	switch a.Type {
-	case Double:
-		sz = 8
-	case Short:
-		sz = 2
-	case Int:
-		sz = 4
-	case Byte:
-		sz = 1
-	case Float:
-		sz = 4
-	case Char:
-		sz = 1
-	}
-
-	if sz < 4 {
-		sz = 4
-	}
-	return sz
+	return int32(a.Type.ArraySize(1))
 }
 
 func (v Var) ValueByteSize() int32 {
-	var sz int32
-	switch v.Type {
-	case Double:
-		sz = 8
-	case Short:
-		sz = 2
-	case Int:
-		sz = 4
-	case Byte:
-		sz = 1
-	case Float:
-		sz = 4
-	case Char:
-		sz = 1
-	}
+	var len = 1
+
 	for _, d := range v.Dimensions {
-		sz *= d.Len
+		len *= int(d.Len)
 	}
 
-	rest := 4 - (sz % 4)
-	if rest != 4 {
-		sz += rest
-	}
+	return int32(v.Type.ArraySize(len))
 
-	return sz
 }
 
 func stringByteSize(val string) int32 {
-	len := len(val)
-	rest := 4 - (len % 4)
-	if rest != 4 {
-		len += rest
-	}
-	return int32(4 + len)
+	return int32(4 + Byte.ArraySize(len(val)))
 }
 
 func (d Dimension) ByteSize() int32 {

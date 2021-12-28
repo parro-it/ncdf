@@ -22,3 +22,53 @@ const (
 type BaseType interface {
 	byte | int16 | int32 | float32 | float64
 }
+
+// AlignForArrayOf returns the size in bytes of
+// padding bytes needed to align to
+// 32 bits boundary an array of n elements
+// of this type.
+// Returns -1 if n <= 0
+func (t Type) AlignForArrayOf(n int) int {
+	if n <= 0 {
+		return -1
+	}
+	len := t.ScalarSize() * n
+	rest := 4 - (len % 4)
+	if rest == 4 {
+		rest = 0
+	}
+	return rest
+}
+
+// ArraySize returns the size in bytes of
+// an array of n elements, aligned to 32 bits.
+// Returns -1 if n <= 0
+func (t Type) ArraySize(n int) int {
+	if n <= 0 {
+		return -1
+	}
+	v := n * t.ScalarSize()
+	pd := t.AlignForArrayOf(n)
+	return v + pd
+}
+
+// ScalarSize returns the size in bytes of
+// a single scalar value of this type.
+func (t Type) ScalarSize() int {
+	var sz int
+	switch t {
+	case Double:
+		sz = 8
+	case Short:
+		sz = 2
+	case Int:
+		sz = 4
+	case Byte:
+		sz = 1
+	case Float:
+		sz = 4
+	case Char:
+		sz = 1
+	}
+	return sz
+}
